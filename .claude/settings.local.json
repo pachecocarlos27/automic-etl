@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if not exist \"c:\\Users\\carl0\\OneDrive\\Documents\\datantLLC\\AutomicETLTool\\src\\automic_etl\\ui\\pages\" mkdir \"c:\\Users\\carl0\\OneDrive\\Documents\\datantLLC\\AutomicETLTool\\src\\automic_etl\\ui\\pages\")",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

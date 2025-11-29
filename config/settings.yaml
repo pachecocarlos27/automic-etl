@@ -1,0 +1,243 @@
+# Automic ETL - Default Configuration
+# Override with environment variables or custom config file
+
+lakehouse:
+  name: "default_lakehouse"
+  description: "AI-Augmented Lakehouse"
+
+# Storage provider configuration
+# Supported: aws, gcp, azure
+storage:
+  provider: "aws"
+
+  aws:
+    bucket: "${AWS_LAKEHOUSE_BUCKET}"
+    region: "${AWS_REGION:us-east-1}"
+    access_key_id: "${AWS_ACCESS_KEY_ID}"
+    secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+    endpoint_url: null  # For MinIO or LocalStack
+
+  gcp:
+    bucket: "${GCP_LAKEHOUSE_BUCKET}"
+    project_id: "${GCP_PROJECT_ID}"
+    credentials_file: "${GOOGLE_APPLICATION_CREDENTIALS}"
+
+  azure:
+    container: "${AZURE_LAKEHOUSE_CONTAINER}"
+    storage_account: "${AZURE_STORAGE_ACCOUNT}"
+    connection_string: "${AZURE_STORAGE_CONNECTION_STRING}"
+    use_managed_identity: false
+
+# Apache Iceberg configuration
+iceberg:
+  catalog:
+    # Catalog types: glue, hive, rest, sql, dynamodb
+    type: "sql"
+    name: "automic_catalog"
+
+    # For SQL catalog (SQLite for local dev, PostgreSQL for production)
+    uri: "sqlite:///catalog.db"
+
+    # For AWS Glue catalog
+    # type: "glue"
+    # region: "${AWS_REGION}"
+
+    # For REST catalog
+    # type: "rest"
+    # uri: "http://localhost:8181"
+
+  warehouse: "warehouse/"
+
+  # Table defaults
+  table_defaults:
+    format_version: 2
+    write:
+      target_file_size_bytes: 536870912  # 512MB
+      parquet:
+        compression: "zstd"
+        compression_level: 3
+
+# Medallion architecture configuration
+medallion:
+  bronze:
+    path: "bronze/"
+    description: "Raw data layer - preserves original format"
+    retention_days: 90
+    partition_by: ["_ingestion_date"]
+
+  silver:
+    path: "silver/"
+    description: "Cleaned and validated data layer"
+    retention_days: 365
+    partition_by: ["_processing_date"]
+
+  gold:
+    path: "gold/"
+    description: "Business-level aggregations and ML-ready data"
+    retention_days: null  # Keep forever
+    partition_by: []
+
+# LLM configuration for AI augmentation
+llm:
+  # Provider: anthropic, openai, azure_openai, ollama, litellm
+  provider: "anthropic"
+  model: "claude-sonnet-4-20250514"
+  api_key: "${ANTHROPIC_API_KEY}"
+
+  # Alternative configurations:
+  # provider: "openai"
+  # model: "gpt-4-turbo"
+  # api_key: "${OPENAI_API_KEY}"
+
+  # For local models via Ollama:
+  # provider: "ollama"
+  # model: "llama3"
+  # base_url: "http://localhost:11434"
+
+  # Settings
+  temperature: 0.1
+  max_tokens: 4096
+  timeout: 120
+
+  # Features to enable
+  features:
+    schema_inference: true
+    entity_extraction: true
+    data_classification: true
+    anomaly_detection: true
+    query_building: true
+
+# Extraction configuration
+extraction:
+  # Default mode: batch, incremental
+  default_mode: "incremental"
+
+  batch:
+    size: 100000
+    parallel_workers: 4
+
+  incremental:
+    # Watermark strategy: timestamp, id, version
+    watermark_strategy: "timestamp"
+    watermark_column: "updated_at"
+    lookback_window: "1 hour"
+
+  # CDC configuration
+  cdc:
+    enabled: false
+    # CDC methods: log_based, trigger_based, timestamp
+    method: "timestamp"
+
+# Data quality configuration
+data_quality:
+  enabled: true
+
+  checks:
+    null_check: true
+    duplicate_check: true
+    schema_validation: true
+    range_validation: true
+    referential_integrity: false
+
+  # Actions on quality failures
+  on_failure: "warn"  # warn, fail, quarantine
+
+  # Quarantine configuration
+  quarantine:
+    enabled: true
+    path: "quarantine/"
+
+# Transformation defaults
+transformation:
+  # String normalization
+  normalize_strings: true
+  trim_whitespace: true
+  lowercase_columns: false
+
+  # Date handling
+  date_format: "ISO8601"
+  timezone: "UTC"
+
+  # Null handling
+  null_string_values: ["", "null", "NULL", "None", "N/A", "NA", "n/a"]
+
+# Unstructured data processing
+unstructured:
+  # OCR configuration
+  ocr:
+    enabled: true
+    language: "eng"
+    dpi: 300
+
+  # Document parsing
+  documents:
+    extract_tables: true
+    extract_images: true
+    extract_metadata: true
+
+  # Chunking for LLM processing
+  chunking:
+    strategy: "by_title"  # by_title, by_page, fixed_size
+    max_chunk_size: 1000
+    overlap: 200
+
+# Connectors configuration
+connectors:
+  # Default connection timeout
+  timeout: 30
+
+  # Retry configuration
+  retry:
+    max_attempts: 3
+    backoff_factor: 2
+
+  # Database-specific settings
+  databases:
+    pool_size: 5
+    max_overflow: 10
+
+  # API rate limiting
+  apis:
+    rate_limit: 100  # requests per minute
+    concurrent_requests: 10
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "json"  # json, console
+  file: null  # Optional log file path
+
+  # Structured logging fields
+  include_fields:
+    - timestamp
+    - level
+    - message
+    - pipeline_id
+    - table_name
+
+# Metrics and monitoring
+metrics:
+  enabled: true
+  provider: "prometheus"  # prometheus, cloudwatch, stackdriver
+
+  # Metrics to collect
+  collect:
+    - rows_processed
+    - bytes_processed
+    - processing_time
+    - error_count
+    - llm_tokens_used
+
+# Pipeline defaults
+pipeline:
+  # Execution mode: sequential, parallel
+  mode: "parallel"
+  max_parallel_jobs: 4
+
+  # Checkpointing
+  checkpoint:
+    enabled: true
+    interval: 1000  # rows
+
+  # Scheduling (cron format)
+  schedule: null  # e.g., "0 */6 * * *" for every 6 hours
