@@ -64,6 +64,12 @@
 
 The application requires various API keys and credentials for full functionality. These should be added via Replit Secrets:
 
+### Required for Superadmin Access
+- `SUPERADMIN_EMAIL`: The email address for the superadmin account
+- `SUPERADMIN_PASSWORD`: The password for the superadmin account
+
+The superadmin account is automatically created/updated when these secrets are configured. Changing the secrets will update the superadmin credentials on next application restart.
+
 ### Required for LLM Features
 - `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`: For AI-powered features
 
