@@ -73,6 +73,29 @@ def __getattr__(name: str):
     elif name == "DeltaTableManager":
         from automic_etl.storage.delta import DeltaTableManager
         return DeltaTableManager
+    # Integrations (lazy)
+    elif name == "SparkIntegration":
+        from automic_etl.integrations import SparkIntegration
+        return SparkIntegration
+    elif name == "DbtIntegration":
+        from automic_etl.integrations import DbtIntegration
+        return DbtIntegration
+    elif name == "GreatExpectationsIntegration":
+        from automic_etl.integrations import GreatExpectationsIntegration
+        return GreatExpectationsIntegration
+    elif name == "AirflowIntegration":
+        from automic_etl.integrations import AirflowIntegration
+        return AirflowIntegration
+    elif name == "MLflowIntegration":
+        from automic_etl.integrations import MLflowIntegration
+        return MLflowIntegration
+    elif name == "OpenMetadataIntegration":
+        from automic_etl.integrations import OpenMetadataIntegration
+        return OpenMetadataIntegration
+    # API (lazy)
+    elif name == "create_api":
+        from automic_etl.api import create_app
+        return create_app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
@@ -106,6 +129,15 @@ __all__ = [
     "AlertManager",
     # Delta Lake (lazy)
     "DeltaTableManager",
+    # Integrations (lazy)
+    "SparkIntegration",
+    "DbtIntegration",
+    "GreatExpectationsIntegration",
+    "AirflowIntegration",
+    "MLflowIntegration",
+    "OpenMetadataIntegration",
+    # API (lazy)
+    "create_api",
     # Exceptions
     "AutomicETLError",
     "ConfigurationError",
