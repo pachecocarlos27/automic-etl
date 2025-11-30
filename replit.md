@@ -4,6 +4,15 @@
 **Automic ETL** is an AI-augmented ETL tool for building data lakehouses with medallion architecture (Bronze/Silver/Gold). It features LLM integration for intelligent data processing, supports multiple cloud storage providers, and includes both a Streamlit web UI and FastAPI backend.
 
 ## Recent Changes
+- **2025-11-30**: UI/UX modernization completed
+  - Redesigned theme system with modern professional color palette:
+    - Primary blue (#0066FF) with teal accent (#00D4AA)
+    - Clean Inter font typography
+    - Dark sidebar gradient (#0F172A to #1E293B)
+  - Updated login page with gradient logo icon and modern form styling
+  - Redesigned dashboard home with colorful metric cards and responsive grid layout
+  - Improved medallion architecture cards with colored top borders
+  - Enhanced sidebar navigation with better visual hierarchy
 - **2025-11-30**: Initial Replit setup completed
   - Installed Python 3.11 and all dependencies from pyproject.toml
   - Configured Streamlit UI to run on port 5000 with 0.0.0.0 host binding
