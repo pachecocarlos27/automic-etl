@@ -169,24 +169,33 @@ class AuthManager:
             )
             return
         
-        existing_superadmin = None
+        existing_user_with_email = None
         for user in self.users.values():
-            if user.is_superadmin and user.email == superadmin_email:
-                existing_superadmin = user
+            if user.email == superadmin_email:
+                existing_user_with_email = user
                 break
         
-        if existing_superadmin:
-            if not existing_superadmin.verify_password(superadmin_password):
-                existing_superadmin.set_password(superadmin_password)
-                existing_superadmin.metadata.pop("force_password_change", None)
-                self._save_data()
-                self.logger.info("Superadmin password updated from secrets")
-        else:
-            old_superadmins = [u for u in self.users.values() if u.is_superadmin]
-            for old_admin in old_superadmins:
-                old_admin.is_superadmin = False
-                old_admin.roles = [r for r in old_admin.roles if r != "superadmin"]
+        old_superadmins = [u for u in self.users.values() 
+                          if u.is_superadmin and u.email != superadmin_email]
+        for old_admin in old_superadmins:
+            old_admin.is_superadmin = False
+            old_admin.roles = [r for r in old_admin.roles if r != "superadmin"]
+            self.logger.info("Revoked superadmin from old account", email=old_admin.email)
+        
+        if existing_user_with_email:
+            existing_user_with_email.is_superadmin = True
+            existing_user_with_email.status = UserStatus.ACTIVE
+            if "superadmin" not in existing_user_with_email.roles:
+                existing_user_with_email.roles.append("superadmin")
             
+            if not existing_user_with_email.verify_password(superadmin_password):
+                existing_user_with_email.set_password(superadmin_password)
+                existing_user_with_email.metadata.pop("force_password_change", None)
+                self.logger.info("Superadmin password updated from secrets")
+            
+            self._save_data()
+            self.logger.info("Superadmin configured from secrets", email=superadmin_email)
+        else:
             user = User.create(
                 username=superadmin_email.split("@")[0],
                 email=superadmin_email,
