@@ -152,17 +152,66 @@ with KafkaConnector(config) as kafka:
 
 ### LLM-Powered Queries
 
+The SQL Assistant provides natural language to SQL conversion with multi-turn conversation support, security validation, and tier-based access control.
+
 ```python
-from automic_etl.llm import QueryBuilder
+from automic_etl.llm import SQLAssistant, TableSchema
+from automic_etl.core.config import Settings
 
-query_builder = QueryBuilder(settings)
-query_builder.register_dataframe("customers", df)
+settings = Settings()
+assistant = SQLAssistant(settings)
 
-result = query_builder.build_query(
-    "Show me all VIP customers with orders over $10,000"
+# Register table schemas for context
+assistant.register_table(TableSchema(
+    name="silver.customers",
+    columns={"customer_id": "INT", "name": "STRING", "segment": "STRING"},
+    description="Customer master data",
+    tier="silver"
+))
+
+# Convert natural language to SQL
+result = assistant.natural_language_to_sql(
+    query="Show me all VIP customers with orders over $10,000",
+    user_id="user-123",
+    company_id="company-abc",
+    allowed_tiers=["silver", "gold"]
 )
-print(result.sql)
-# SELECT * FROM customers WHERE tier = 'VIP' AND total_orders > 10000
+
+print(f"SQL: {result.sql}")
+print(f"Confidence: {result.confidence}")
+print(f"Explanation: {result.explanation}")
+# SQL: SELECT * FROM silver.customers WHERE segment = 'VIP' AND total_orders > 10000
+# Confidence: 0.92
+# Explanation: Filtering customers by VIP segment and order threshold
+```
+
+#### Multi-turn Conversations
+
+```python
+# Continue a conversation for query refinement
+result2 = assistant.refine_query(
+    refinement="Also include their email addresses",
+    conversation_id=result.query_id,
+    user_id="user-123",
+    company_id="company-abc"
+)
+
+# Get conversation history
+history = assistant.get_conversation_history(result.query_id)
+```
+
+#### Result Explanation
+
+```python
+# Get natural language explanation of query results
+explanation = assistant.explain_results(
+    sql=result.sql,
+    columns=["customer_id", "name", "segment"],
+    data=[[1, "John Doe", "VIP"], [2, "Jane Smith", "VIP"]],
+    row_count=2
+)
+print(explanation["summary"])
+# "Found 2 VIP customers matching the criteria..."
 ```
 
 ### Using Integrations
@@ -233,6 +282,12 @@ uvicorn automic_etl.api:app --host 0.0.0.0 --port 8000
 | `/api/v1/tables` | GET, POST | List and create tables |
 | `/api/v1/tables/{id}/data` | POST | Query table data |
 | `/api/v1/queries/execute` | POST | Execute SQL or NL query |
+| `/api/v1/queries/natural` | POST | Natural language query with conversation |
+| `/api/v1/queries/refine` | POST | Refine previous query |
+| `/api/v1/queries/suggestions` | GET | Get suggested queries |
+| `/api/v1/queries/autocomplete` | GET | Query autocomplete |
+| `/api/v1/queries/schemas` | GET | Get available table schemas |
+| `/api/v1/queries/conversations/{id}` | GET, DELETE | Manage conversations |
 | `/api/v1/connectors` | GET, POST | Manage connectors |
 | `/api/v1/connectors/{id}/test` | POST | Test connection |
 | `/api/v1/lineage/graph` | GET | Get lineage graph |
@@ -242,11 +297,36 @@ uvicorn automic_etl.api:app --host 0.0.0.0 --port 8000
 ### Example: Execute Query via API
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/queries/execute \
+# Execute a natural language query
+curl -X POST http://localhost:8000/api/v1/queries/natural \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
   -d '{
     "query": "Show me top 10 customers by revenue",
-    "query_type": "natural_language"
+    "explain_results": true
+  }'
+
+# Response includes:
+# - generated_sql: The SQL query generated from natural language
+# - explanation: Human-readable explanation of the query
+# - confidence: Model confidence score (0-1)
+# - intent: Query type (select, aggregate, join, filter, trend)
+# - data: Query results
+# - result_summary: Natural language summary of results
+# - follow_up_questions: Suggested next queries
+```
+
+### Example: Refine a Query
+
+```bash
+# Refine a previous query in a conversation
+curl -X POST http://localhost:8000/api/v1/queries/refine \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "conversation_id": "<conversation-uuid>",
+    "refinement": "Filter to only VIP customers",
+    "execute": true
   }'
 ```
 
@@ -262,11 +342,28 @@ Features:
 - Home dashboard with medallion architecture overview
 - Data ingestion wizard (files, databases, APIs, streaming)
 - Pipeline builder with visual stage management
-- Query Studio with natural language support
+- **Query Studio** - LLM-powered SQL interface with natural language support
 - Data profiling and quality metrics
 - Data lineage visualization
 - Monitoring dashboard
 - Settings and connector management
+
+### Query Studio
+
+The Query Studio provides an intuitive interface for querying your data lakehouse using natural language or SQL:
+
+- **Natural Language Tab**: Ask questions in plain English and get optimized SQL
+- **SQL Editor**: Write and execute SQL with syntax validation and formatting
+- **Conversation Tab**: Multi-turn conversations with query refinement
+- **Query History**: Track and re-run previous queries
+
+Features:
+- AI-powered SQL generation with confidence scores
+- Schema browser with tier-based access control (Bronze/Silver/Gold)
+- Interactive query results with auto-visualization
+- Export to CSV, JSON, Excel, Parquet
+- Query suggestions based on your data
+- Security validation and SQL injection prevention
 
 ## CLI Usage
 
@@ -416,12 +513,14 @@ automic-etl/
 │   │   └── openmetadata.py
 │   ├── lineage/             # Data lineage tracking
 │   ├── llm/                 # LLM integration
+│   │   ├── sql_assistant.py # NL-to-SQL with conversations
 │   ├── medallion/           # Bronze/Silver/Gold layers
 │   ├── notifications/       # Alerts (Email, Slack, etc.)
 │   ├── orchestration/       # Job scheduling
 │   ├── storage/             # Cloud storage & table formats
 │   ├── ui/                  # Streamlit Web UI
 │   │   ├── pages/           # UI pages
+│   │   │   └── query_studio.py # LLM-powered query interface
 │   │   ├── components.py    # Reusable components
 │   │   └── theme.py         # Theming system
 │   └── validation/          # Data quality validation
