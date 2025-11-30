@@ -5,15 +5,16 @@ from __future__ import annotations
 import streamlit as st
 from datetime import datetime
 
-from automic_etl.auth.manager import AuthManager, AuthenticationError
-from automic_etl.auth.models import UserStatus
+from automic_etl.db.auth_service import get_auth_service, AuthenticationError
 
 
-def get_auth_manager() -> AuthManager:
-    """Get or create auth manager in session state."""
-    if "auth_manager" not in st.session_state:
-        st.session_state.auth_manager = AuthManager()
-    return st.session_state.auth_manager
+def get_auth_service_instance():
+    """Get the auth service, initializing database on first access."""
+    if "auth_initialized" not in st.session_state:
+        auth_service = get_auth_service()
+        auth_service.initialize()
+        st.session_state.auth_initialized = True
+    return get_auth_service()
 
 
 def init_session_state():
@@ -24,8 +25,6 @@ def init_session_state():
         st.session_state.user = None
     if "token" not in st.session_state:
         st.session_state.token = None
-    if "session" not in st.session_state:
-        st.session_state.session = None
 
 
 def check_authentication() -> bool:
@@ -35,29 +34,26 @@ def check_authentication() -> bool:
     if not st.session_state.authenticated or not st.session_state.token:
         return False
 
-    auth_manager = get_auth_manager()
-    result = auth_manager.validate_session(st.session_state.token)
+    auth_service = get_auth_service_instance()
+    user = auth_service.validate_session(st.session_state.token)
 
-    if not result:
+    if not user:
         logout()
         return False
 
-    user, session = result
     st.session_state.user = user
-    st.session_state.session = session
     return True
 
 
 def logout():
     """Log out the current user."""
-    if st.session_state.token:
-        auth_manager = get_auth_manager()
-        auth_manager.logout(st.session_state.token)
+    if st.session_state.get("token"):
+        auth_service = get_auth_service_instance()
+        auth_service.logout(st.session_state.token)
 
     st.session_state.authenticated = False
     st.session_state.user = None
     st.session_state.token = None
-    st.session_state.session = None
 
 
 def show_login_page():
@@ -327,10 +323,10 @@ def show_login_form():
                 st.error("Please enter username and password")
                 return
 
-            auth_manager = get_auth_manager()
+            auth_service = get_auth_service_instance()
 
             try:
-                user, token, session = auth_manager.authenticate(
+                user, token = auth_service.authenticate(
                     username=username,
                     password=password,
                 )
@@ -338,11 +334,6 @@ def show_login_form():
                 st.session_state.authenticated = True
                 st.session_state.user = user
                 st.session_state.token = token
-                st.session_state.session = session
-
-                # Check if password change required
-                if user.metadata.get("force_password_change"):
-                    st.session_state.force_password_change = True
 
                 st.success("Login successful!")
                 st.rerun()
@@ -383,10 +374,10 @@ def show_register_form():
                 st.error("Please accept the Terms of Service")
                 return
 
-            auth_manager = get_auth_manager()
+            auth_service = get_auth_service_instance()
 
             try:
-                user = auth_manager.register(
+                user = auth_service.register(
                     username=username,
                     email=email,
                     password=password,
@@ -421,11 +412,11 @@ def show_password_change_modal():
                 st.error("Passwords do not match")
                 return
 
-            auth_manager = get_auth_manager()
+            auth_service = get_auth_service_instance()
 
             try:
-                success = auth_manager.change_password(
-                    user_id=st.session_state.user.user_id,
+                success = auth_service.change_password(
+                    user_id=st.session_state.user.id,
                     current_password=current_password,
                     new_password=new_password,
                 )
@@ -450,13 +441,13 @@ def show_user_menu():
         st.markdown("---")
 
         # User info
-        st.markdown(f"**{user.display_name}**")
+        st.markdown(f"**{user.full_name}**")
         st.caption(f"@{user.username}")
 
         if user.is_superadmin:
             st.markdown("*Super Administrator*")
         elif user.roles:
-            st.markdown(f"*{', '.join(user.roles)}*")
+            st.markdown(f"*{', '.join(user.roles or [])}*")
 
         # User actions
         col1, col2 = st.columns(2)
@@ -471,7 +462,7 @@ def show_user_menu():
                 st.rerun()
 
         # Admin link for authorized users
-        if user.is_superadmin or any(r in user.roles for r in ["admin", "superadmin"]):
+        if user.is_superadmin or any(r in (user.roles or []) for r in ["admin", "superadmin"]):
             st.markdown("---")
             if st.button("Admin Dashboard", use_container_width=True, type="primary"):
                 st.session_state.current_page = "admin"
@@ -488,6 +479,7 @@ def show_profile_page():
 
     with col1:
         # Avatar placeholder
+        avatar_letter = user.first_name[0] if user.first_name else user.username[0].upper()
         st.markdown(f"""
         <div style="
             width: 150px;
@@ -502,11 +494,11 @@ def show_profile_page():
             font-weight: bold;
             margin: 1rem auto;
         ">
-            {user.first_name[0] if user.first_name else user.username[0].upper()}
+            {avatar_letter}
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown(f"### {user.display_name}")
+        st.markdown(f"### {user.full_name}")
         st.caption(f"@{user.username}")
 
         if user.is_superadmin:
@@ -516,28 +508,11 @@ def show_profile_page():
         tab1, tab2, tab3 = st.tabs(["Profile Info", "Security", "Settings"])
 
         with tab1:
-            with st.form("profile_form"):
-                first_name = st.text_input("First Name", value=user.first_name)
-                last_name = st.text_input("Last Name", value=user.last_name)
-                email = st.text_input("Email", value=user.email)
-
-                submitted = st.form_submit_button("Update Profile")
-
-                if submitted:
-                    auth_manager = get_auth_manager()
-                    try:
-                        updated_user = auth_manager.update_user(
-                            user_id=user.user_id,
-                            first_name=first_name,
-                            last_name=last_name,
-                            email=email,
-                        )
-                        if updated_user:
-                            st.session_state.user = updated_user
-                            st.success("Profile updated!")
-                            st.rerun()
-                    except AuthenticationError as e:
-                        st.error(str(e))
+            st.markdown("#### Profile Details")
+            st.text_input("First Name", value=user.first_name or "", disabled=True)
+            st.text_input("Last Name", value=user.last_name or "", disabled=True)
+            st.text_input("Email", value=user.email, disabled=True)
+            st.info("Contact an administrator to update your profile information.")
 
             st.markdown("---")
 
@@ -545,8 +520,8 @@ def show_profile_page():
             st.markdown("#### Account Information")
             col_a, col_b = st.columns(2)
             with col_a:
-                st.markdown(f"**User ID:** `{user.user_id[:8]}...`")
-                st.markdown(f"**Status:** {user.status.value.title()}")
+                st.markdown(f"**User ID:** `{user.id[:8]}...`")
+                st.markdown(f"**Status:** {user.status.title()}")
             with col_b:
                 st.markdown(f"**Created:** {user.created_at.strftime('%Y-%m-%d')}")
                 if user.last_login:
@@ -566,10 +541,10 @@ def show_profile_page():
                     if new_pwd != confirm_pwd:
                         st.error("Passwords do not match")
                     else:
-                        auth_manager = get_auth_manager()
+                        auth_service = get_auth_service_instance()
                         try:
-                            auth_manager.change_password(
-                                user_id=user.user_id,
+                            auth_service.change_password(
+                                user_id=user.id,
                                 current_password=current_pwd,
                                 new_password=new_pwd,
                             )
@@ -578,27 +553,8 @@ def show_profile_page():
                             st.error(str(e))
 
             st.markdown("---")
-
-            # Active sessions
-            st.markdown("#### Active Sessions")
-            auth_manager = get_auth_manager()
-            sessions = auth_manager.session_manager.get_user_sessions(user.user_id)
-
-            for sess in sessions:
-                with st.container():
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    with col1:
-                        current = " (current)" if sess.session_id == st.session_state.session.session_id else ""
-                        st.markdown(f"**Session{current}**")
-                        st.caption(f"IP: {sess.ip_address or 'Unknown'}")
-                    with col2:
-                        st.markdown(f"Created: {sess.created_at.strftime('%Y-%m-%d %H:%M')}")
-                        st.caption(f"Expires: {sess.expires_at.strftime('%Y-%m-%d %H:%M')}")
-                    with col3:
-                        if sess.session_id != st.session_state.session.session_id:
-                            if st.button("Revoke", key=f"revoke_{sess.session_id}"):
-                                auth_manager.session_manager.invalidate_session(sess.session_id)
-                                st.rerun()
+            st.markdown("#### Session Information")
+            st.info("You are currently logged in. Click Logout in the sidebar to end your session.")
 
         with tab3:
             st.markdown("#### User Settings")
@@ -617,14 +573,4 @@ def show_profile_page():
             data_quality_alerts = st.checkbox("Data quality alerts", value=True)
 
             if st.button("Save Settings"):
-                auth_manager = get_auth_manager()
-                auth_manager.update_user(
-                    user_id=user.user_id,
-                    settings={
-                        "theme": theme,
-                        "email_notifications": email_notif,
-                        "pipeline_alerts": pipeline_alerts,
-                        "data_quality_alerts": data_quality_alerts,
-                    }
-                )
                 st.success("Settings saved!")

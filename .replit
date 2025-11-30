@@ -1,9 +1,11 @@
 modules = ["python-3.11"]
 [agent]
 expertMode = true
+integrations = ["streamlit_database:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["arrow-cpp", "libiconv", "libxcrypt", "libyaml", "pkg-config", "poppler_utils", "rdkafka", "tesseract"]
 
 [workflows]
 runButton = "Project"
@@ -32,6 +34,10 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 42249
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"

@@ -183,6 +183,11 @@ def run_app():
     """Run the main Streamlit application."""
     create_app()
 
+    # Initialize database and seed superadmin from environment variables
+    from automic_etl.db.auth_service import get_auth_service
+    auth_service = get_auth_service()
+    auth_service.initialize()
+
     # Initialize app state first
     init_app_state()
 
