@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any
 import json
+import os
 from pathlib import Path
 
 import structlog
@@ -22,6 +23,9 @@ from automic_etl.auth.session import SessionManager, Session
 from automic_etl.auth.rbac import RBACManager
 
 logger = structlog.get_logger()
+
+SUPERADMIN_EMAIL_KEY = "SUPERADMIN_EMAIL"
+SUPERADMIN_PASSWORD_KEY = "SUPERADMIN_PASSWORD"
 
 
 class AuthenticationError(Exception):
@@ -154,31 +158,49 @@ class AuthManager:
         )
 
     def _ensure_superadmin(self) -> None:
-        """Ensure a superadmin account exists."""
-        superadmins = [u for u in self.users.values() if u.is_superadmin]
-
-        if not superadmins:
-            # Create default superadmin
+        """Ensure a superadmin account exists using secrets."""
+        superadmin_email = os.environ.get(SUPERADMIN_EMAIL_KEY)
+        superadmin_password = os.environ.get(SUPERADMIN_PASSWORD_KEY)
+        
+        if not superadmin_email or not superadmin_password:
+            self.logger.warning(
+                "Superadmin secrets not configured",
+                hint=f"Set {SUPERADMIN_EMAIL_KEY} and {SUPERADMIN_PASSWORD_KEY} secrets"
+            )
+            return
+        
+        existing_superadmin = None
+        for user in self.users.values():
+            if user.is_superadmin and user.email == superadmin_email:
+                existing_superadmin = user
+                break
+        
+        if existing_superadmin:
+            if not existing_superadmin.verify_password(superadmin_password):
+                existing_superadmin.set_password(superadmin_password)
+                existing_superadmin.metadata.pop("force_password_change", None)
+                self._save_data()
+                self.logger.info("Superadmin password updated from secrets")
+        else:
+            old_superadmins = [u for u in self.users.values() if u.is_superadmin]
+            for old_admin in old_superadmins:
+                old_admin.is_superadmin = False
+                old_admin.roles = [r for r in old_admin.roles if r != "superadmin"]
+            
             user = User.create(
-                username="admin",
-                email="admin@localhost",
-                password="admin123",  # Should be changed on first login
+                username=superadmin_email.split("@")[0],
+                email=superadmin_email,
+                password=superadmin_password,
                 first_name="Super",
                 last_name="Admin",
                 is_superadmin=True,
             )
             user.status = UserStatus.ACTIVE
             user.roles = ["superadmin"]
-            user.metadata["force_password_change"] = True
 
             self.users[user.user_id] = user
             self._save_data()
-
-            self.logger.warning(
-                "Created default superadmin account",
-                username="admin",
-                note="Change password immediately!",
-            )
+            self.logger.info("Superadmin created from secrets", email=superadmin_email)
 
     def register(
         self,
