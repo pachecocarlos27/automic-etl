@@ -169,3 +169,14 @@ derby.log
 
 # Auth data (sensitive)
 auth_data.json
+
+# Replit
+.replit
+replit.nix
+.pythonlibs/
+
+# Warehouse and catalog files
+warehouse/
+catalog.db
+catalog.db-shm
+catalog.db-wal
