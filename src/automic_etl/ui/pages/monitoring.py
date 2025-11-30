@@ -5,18 +5,19 @@ from __future__ import annotations
 import streamlit as st
 from datetime import datetime, timedelta
 
+from automic_etl.db.pipeline_service import get_pipeline_service
+from automic_etl.db.data_service import get_data_service
+
 
 def show_monitoring_page():
     """Display the monitoring page."""
-    st.title("📈 Monitoring & Jobs")
+    st.title("Monitoring & Jobs")
     st.markdown("Monitor pipeline runs, track jobs, and view system health.")
 
-    # Tabs for different views
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Dashboard",
-        "🔄 Pipeline Runs",
-        "📋 Job Queue",
-        "🔔 Alerts",
+    tab1, tab2, tab3 = st.tabs([
+        "Dashboard",
+        "Pipeline Runs",
+        "Data Tables",
     ])
 
     with tab1:
@@ -26,238 +27,226 @@ def show_monitoring_page():
         show_pipeline_runs()
 
     with tab3:
-        show_job_queue()
-
-    with tab4:
-        show_alerts()
+        show_data_tables_overview()
 
 
 def show_monitoring_dashboard():
     """Show monitoring dashboard."""
     st.subheader("System Health")
 
-    # Overall status
+    pipeline_service = get_pipeline_service()
+    data_service = get_data_service()
+
+    pipelines = pipeline_service.list_pipelines()
+    runs = pipeline_service.get_all_runs(limit=100)
+    tables = data_service.list_tables()
+
+    active_pipelines = len([p for p in pipelines if p.status == "active"])
+    running_pipelines = len([p for p in pipelines if p.status == "running"])
+    failed_runs = len([r for r in runs if r.status == "failed"])
+    completed_runs = len([r for r in runs if r.status == "completed"])
+
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric(
-            label="System Status",
-            value="Healthy",
-            delta="100% uptime",
+            label="Total Pipelines",
+            value=str(len(pipelines)),
+            delta=f"{active_pipelines} active",
         )
 
     with col2:
         st.metric(
-            label="Active Pipelines",
-            value="3",
-            delta="2 running",
+            label="Pipeline Runs",
+            value=str(len(runs)),
+            delta=f"{running_pipelines} running",
         )
 
     with col3:
         st.metric(
-            label="Jobs Today",
-            value="47",
-            delta="+12 vs yesterday",
+            label="Completed",
+            value=str(completed_runs),
+            delta="runs",
         )
 
     with col4:
         st.metric(
-            label="Errors (24h)",
-            value="2",
-            delta="-5 vs yesterday",
-            delta_color="inverse",
+            label="Failed",
+            value=str(failed_runs),
+            delta="runs",
+            delta_color="inverse" if failed_runs > 0 else "off",
         )
 
     st.markdown("---")
 
-    # Resource utilization
-    st.subheader("Resource Utilization")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("**CPU Usage**")
-        st.progress(0.45)
-        st.caption("45% - Normal")
-
-    with col2:
-        st.markdown("**Memory Usage**")
-        st.progress(0.62)
-        st.caption("62% - Normal")
-
-    with col3:
-        st.markdown("**Storage Usage**")
-        st.progress(0.78)
-        st.caption("78% - Warning")
-
-    st.markdown("---")
-
-    # Performance metrics
-    st.subheader("Performance Metrics (Last 24h)")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**Jobs Processed Over Time**")
-        # Mock chart data
-        chart_data = {
-            "Jobs": [5, 8, 12, 15, 10, 8, 6, 4, 3, 5, 8, 12, 18, 22, 15, 12, 10, 8, 6, 5, 7, 10, 14, 12],
-        }
-        st.line_chart(chart_data)
-
-    with col2:
-        st.markdown("**Data Processed (GB)**")
-        chart_data = {
-            "GB": [0.5, 0.8, 1.2, 1.8, 1.5, 1.2, 0.8, 0.5, 0.3, 0.6, 1.0, 1.5, 2.2, 2.8, 2.0, 1.5, 1.2, 0.9, 0.7, 0.5, 0.8, 1.2, 1.8, 1.5],
-        }
-        st.line_chart(chart_data)
-
-    st.markdown("---")
-
-    # Layer statistics
     st.subheader("Medallion Layer Statistics")
 
+    bronze_tables = [t for t in tables if t.layer == "bronze"]
+    silver_tables = [t for t in tables if t.layer == "silver"]
+    gold_tables = [t for t in tables if t.layer == "gold"]
+
+    bronze_size = sum(t.size_bytes or 0 for t in bronze_tables)
+    silver_size = sum(t.size_bytes or 0 for t in silver_tables)
+    gold_size = sum(t.size_bytes or 0 for t in gold_tables)
+
+    bronze_rows = sum(t.row_count or 0 for t in bronze_tables)
+    silver_rows = sum(t.row_count or 0 for t in silver_tables)
+    gold_rows = sum(t.row_count or 0 for t in gold_tables)
+
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("##### 🥉 Bronze Layer")
-        st.metric("Tables", "12")
-        st.metric("Total Size", "4.2 GB")
-        st.metric("Records Ingested (24h)", "125,432")
+        st.markdown("**Bronze Layer**")
+        st.metric("Tables", len(bronze_tables))
+        st.metric("Rows", f"{bronze_rows:,}")
+        size_display = f"{bronze_size / 1024 / 1024:.2f} MB" if bronze_size > 0 else "0 KB"
+        st.metric("Size", size_display)
 
     with col2:
-        st.markdown("##### 🥈 Silver Layer")
-        st.metric("Tables", "8")
-        st.metric("Total Size", "2.8 GB")
-        st.metric("Records Processed (24h)", "98,234")
+        st.markdown("**Silver Layer**")
+        st.metric("Tables", len(silver_tables))
+        st.metric("Rows", f"{silver_rows:,}")
+        size_display = f"{silver_size / 1024 / 1024:.2f} MB" if silver_size > 0 else "0 KB"
+        st.metric("Size", size_display)
 
     with col3:
-        st.markdown("##### 🥇 Gold Layer")
-        st.metric("Tables", "5")
-        st.metric("Total Size", "450 MB")
-        st.metric("Aggregations (24h)", "34")
+        st.markdown("**Gold Layer**")
+        st.metric("Tables", len(gold_tables))
+        st.metric("Rows", f"{gold_rows:,}")
+        size_display = f"{gold_size / 1024 / 1024:.2f} MB" if gold_size > 0 else "0 KB"
+        st.metric("Size", size_display)
+
+    st.markdown("---")
+
+    st.subheader("Recent Activity")
+
+    recent_runs = runs[:5]
+    if not recent_runs:
+        st.info("No recent pipeline runs.")
+    else:
+        for run in recent_runs:
+            status_color = {
+                "completed": "green",
+                "running": "blue",
+                "failed": "red",
+            }.get(run.status, "gray")
+
+            col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+            with col1:
+                st.markdown(f"**:{status_color}[{run.status.upper()}]**")
+            with col2:
+                st.caption(f"Pipeline: {run.pipeline_id[:8]}...")
+            with col3:
+                if run.started_at:
+                    st.caption(f"Started: {run.started_at.strftime('%Y-%m-%d %H:%M')}")
+            with col4:
+                if run.records_processed:
+                    st.caption(f"{run.records_processed} records")
 
 
 def show_pipeline_runs():
     """Show pipeline runs."""
     st.subheader("Pipeline Runs")
 
-    # Filters
-    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    pipeline_service = get_pipeline_service()
+    runs = pipeline_service.get_all_runs(limit=50)
+
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        search = st.text_input("🔍 Search pipelines", placeholder="Search by name...")
+        search = st.text_input("Search", placeholder="Filter by pipeline ID...")
     with col2:
-        status_filter = st.selectbox("Status", ["All", "Running", "Success", "Failed", "Cancelled"])
+        status_filter = st.selectbox("Status", ["All", "completed", "running", "failed"])
     with col3:
-        time_filter = st.selectbox("Time", ["Last Hour", "Today", "Last 7 days", "All"])
-    with col4:
-        if st.button("🔄 Refresh"):
+        if st.button("Refresh"):
             st.rerun()
 
+    if status_filter != "All":
+        runs = [r for r in runs if r.status == status_filter]
+
+    if search:
+        runs = [r for r in runs if search.lower() in r.pipeline_id.lower()]
+
+    if not runs:
+        st.info("No pipeline runs found.")
+        return
+
+    st.markdown(f"**{len(runs)} run(s) found**")
     st.markdown("---")
 
-    # Pipeline runs
-    runs = [
-        {
-            "id": "run_001",
-            "pipeline": "daily_customer_etl",
-            "status": "🟢 Running",
-            "progress": 65,
-            "started": "10 min ago",
-            "duration": "10m 23s",
-            "records": "45,230 / 125,432",
-        },
-        {
-            "id": "run_002",
-            "pipeline": "incremental_orders_sync",
-            "status": "🟢 Running",
-            "progress": 82,
-            "started": "5 min ago",
-            "duration": "5m 12s",
-            "records": "8,234 / 10,000",
-        },
-        {
-            "id": "run_003",
-            "pipeline": "weekly_sales_aggregation",
-            "status": "✅ Success",
-            "progress": 100,
-            "started": "1 hour ago",
-            "duration": "12m 45s",
-            "records": "1,234,567",
-        },
-        {
-            "id": "run_004",
-            "pipeline": "document_processor",
-            "status": "❌ Failed",
-            "progress": 45,
-            "started": "2 hours ago",
-            "duration": "8m 30s",
-            "records": "234 / 500",
-        },
-        {
-            "id": "run_005",
-            "pipeline": "gold_metrics_refresh",
-            "status": "✅ Success",
-            "progress": 100,
-            "started": "3 hours ago",
-            "duration": "3m 15s",
-            "records": "15 aggregations",
-        },
-    ]
-
     for run in runs:
-        with st.expander(f"{run['status'][:2]} **{run['pipeline']}** - {run['id']}"):
-            col1, col2, col3 = st.columns([2, 1, 1])
+        status_color = {
+            "completed": "green",
+            "running": "blue",
+            "failed": "red",
+            "pending": "gray",
+        }.get(run.status, "gray")
+
+        with st.expander(f"**{run.status.upper()}** - Run: {run.id[:8]}..."):
+            col1, col2 = st.columns([2, 1])
 
             with col1:
-                st.markdown(f"**Pipeline:** {run['pipeline']}")
-                st.markdown(f"**Status:** {run['status']}")
-                st.markdown(f"**Started:** {run['started']}")
-                st.markdown(f"**Duration:** {run['duration']}")
-                st.markdown(f"**Records:** {run['records']}")
-
-                if run['progress'] < 100 and "Running" in run['status']:
-                    st.progress(run['progress'] / 100)
-                    st.caption(f"{run['progress']}% complete")
+                st.markdown(f"**Pipeline ID:** {run.pipeline_id[:16]}...")
+                st.markdown(f"**Status:** :{status_color}[{run.status.upper()}]")
+                if run.started_at:
+                    st.markdown(f"**Started:** {run.started_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                if run.completed_at:
+                    st.markdown(f"**Completed:** {run.completed_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                if run.duration_seconds:
+                    st.markdown(f"**Duration:** {run.duration_seconds:.1f} seconds")
+                st.markdown(f"**Records Processed:** {run.records_processed or 0:,}")
 
             with col2:
-                st.markdown("**Stages:**")
-                if "Success" in run['status'] or run['progress'] == 100:
-                    st.markdown("✅ Extract")
-                    st.markdown("✅ Transform")
-                    st.markdown("✅ Load")
-                    st.markdown("✅ Validate")
-                elif "Running" in run['status']:
-                    st.markdown("✅ Extract")
-                    st.markdown("✅ Transform")
-                    st.markdown("🔄 Load")
-                    st.markdown("⏳ Validate")
-                else:
-                    st.markdown("✅ Extract")
-                    st.markdown("❌ Transform")
-                    st.markdown("⏳ Load")
-                    st.markdown("⏳ Validate")
+                if run.error_message:
+                    st.error(f"**Error:** {run.error_message}")
 
-            with col3:
-                st.markdown("**Actions:**")
-                if "Running" in run['status']:
-                    if st.button("⏸️ Pause", key=f"pause_{run['id']}"):
-                        st.info("Pausing pipeline...")
-                    if st.button("🛑 Stop", key=f"stop_{run['id']}"):
-                        st.warning("Stopping pipeline...")
-                else:
-                    if st.button("🔄 Re-run", key=f"rerun_{run['id']}"):
-                        st.info("Starting new run...")
+                if run.logs:
+                    st.markdown("**Logs:**")
+                    for log in (run.logs or [])[:5]:
+                        st.text(log)
 
-                if st.button("📋 View Logs", key=f"logs_{run['id']}"):
-                    st.code("""
-[2024-01-15 10:23:45] INFO: Starting pipeline run
-[2024-01-15 10:23:46] INFO: Extract stage started
-[2024-01-15 10:25:12] INFO: Extract stage completed - 45,230 records
-[2024-01-15 10:25:13] INFO: Transform stage started
-[2024-01-15 10:28:45] INFO: Transform stage completed
-[2024-01-15 10:28:46] INFO: Load stage started...
-                    """)
+
+def show_data_tables_overview():
+    """Show data tables overview."""
+    st.subheader("Data Tables Overview")
+
+    data_service = get_data_service()
+    tables = data_service.list_tables()
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        search = st.text_input("Search tables", placeholder="Filter by name...", key="mon_search")
+    with col2:
+        layer_filter = st.selectbox("Layer", ["All", "bronze", "silver", "gold"], key="mon_layer")
+
+    if layer_filter != "All":
+        tables = [t for t in tables if t.layer == layer_filter]
+
+    if search:
+        tables = [t for t in tables if search.lower() in t.name.lower()]
+
+    if not tables:
+        st.info("No data tables found.")
+        return
+
+    st.markdown(f"**{len(tables)} table(s) found**")
+
+    for table in tables:
+        with st.container():
+            col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
+
+            col1.markdown(f"**{table.name}**")
+            col2.markdown(f"{table.layer}")
+            col3.markdown(f"{table.row_count:,} rows")
+
+            size_kb = (table.size_bytes or 0) / 1024
+            if size_kb > 1024:
+                col4.markdown(f"{size_kb/1024:.1f} MB")
+            else:
+                col4.markdown(f"{size_kb:.1f} KB")
+
+            col5.markdown(table.updated_at.strftime("%m/%d %H:%M"))
+
+            st.markdown("---")
 
 
 def show_job_queue():

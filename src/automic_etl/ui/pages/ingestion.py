@@ -6,37 +6,40 @@ import streamlit as st
 import polars as pl
 from io import BytesIO
 from typing import Any
+import time
+
+from automic_etl.db.data_service import get_data_service
 
 
 def show_ingestion_page():
     """Display the data ingestion page."""
-    st.title("📥 Data Ingestion")
+    st.title("Data Ingestion")
     st.markdown("Upload files or connect to data sources to ingest data into the lakehouse.")
 
-    # Tabs for different ingestion methods
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📁 File Upload",
-        "🗄️ Database",
-        "☁️ Cloud Storage",
-        "📄 Unstructured",
+    tab1, tab2, tab3 = st.tabs([
+        "File Upload",
+        "Data Tables",
+        "Database Connection",
     ])
 
     with tab1:
         show_file_upload_section()
 
     with tab2:
-        show_database_connection_section()
+        show_data_tables_section()
 
     with tab3:
-        show_cloud_storage_section()
-
-    with tab4:
-        show_unstructured_section()
+        show_database_connection_section()
 
 
 def show_file_upload_section():
     """Show file upload section."""
     st.subheader("Upload Files")
+
+    user = st.session_state.get("user")
+    if not user:
+        st.warning("Please log in to upload files.")
+        return
 
     uploaded_files = st.file_uploader(
         "Choose files to upload",
@@ -50,11 +53,10 @@ def show_file_upload_section():
         st.subheader("Uploaded Files")
 
         for uploaded_file in uploaded_files:
-            with st.expander(f"📄 {uploaded_file.name}", expanded=True):
+            with st.expander(f"{uploaded_file.name}", expanded=True):
                 col1, col2 = st.columns([3, 1])
 
                 with col1:
-                    # Preview data
                     try:
                         if uploaded_file.name.endswith(".csv"):
                             df = pl.read_csv(BytesIO(uploaded_file.getvalue()))
@@ -68,16 +70,16 @@ def show_file_upload_section():
                             st.error(f"Unsupported file type: {uploaded_file.name}")
                             continue
 
-                        st.markdown(f"**Shape:** {df.shape[0]:,} rows × {df.shape[1]} columns")
+                        st.markdown(f"**Shape:** {df.shape[0]:,} rows x {df.shape[1]} columns")
                         st.dataframe(df.head(10), use_container_width=True)
 
-                        # Store in session for later use
                         if "uploaded_dataframes" not in st.session_state:
                             st.session_state["uploaded_dataframes"] = {}
                         st.session_state["uploaded_dataframes"][uploaded_file.name] = df
 
                     except Exception as e:
                         st.error(f"Error reading file: {e}")
+                        continue
 
                 with col2:
                     st.markdown("**Options**")
@@ -92,31 +94,115 @@ def show_file_upload_section():
                         key=f"layer_{uploaded_file.name}",
                     )
 
-                    # AI Options
-                    st.markdown("**AI Options**")
-                    infer_schema = st.checkbox(
-                        "🤖 Infer Schema with LLM",
-                        value=True,
-                        key=f"schema_{uploaded_file.name}",
-                    )
-                    detect_pii = st.checkbox(
-                        "🔒 Detect PII",
-                        value=True,
-                        key=f"pii_{uploaded_file.name}",
-                    )
-                    extract_entities = st.checkbox(
-                        "🏷️ Extract Entities",
-                        value=False,
-                        key=f"entities_{uploaded_file.name}",
-                    )
+                    if st.button("Ingest", key=f"ingest_{uploaded_file.name}", type="primary"):
+                        if not table_name:
+                            st.error("Please enter a table name.")
+                        else:
+                            with st.spinner("Ingesting data..."):
+                                progress = st.progress(0)
 
-                    if st.button("🚀 Ingest", key=f"ingest_{uploaded_file.name}", type="primary"):
-                        with st.spinner("Ingesting data..."):
-                            # Simulate ingestion
-                            progress = st.progress(0)
-                            for i in range(100):
-                                progress.progress(i + 1)
-                            st.success(f"✅ Ingested {uploaded_file.name} to {target_layer}.{table_name}")
+                                schema_def = {
+                                    "columns": [
+                                        {"name": col, "dtype": str(df[col].dtype)}
+                                        for col in df.columns
+                                    ]
+                                }
+
+                                for i in range(50):
+                                    time.sleep(0.01)
+                                    progress.progress(i + 1)
+
+                                data_service = get_data_service()
+                                existing = data_service.get_table_by_name(table_name, target_layer)
+
+                                if existing:
+                                    data_service.update_table(
+                                        table_id=existing.id,
+                                        row_count=df.shape[0],
+                                        size_bytes=len(uploaded_file.getvalue()),
+                                        schema_definition=schema_def,
+                                    )
+                                    st.info(f"Updated existing table: {target_layer}.{table_name}")
+                                else:
+                                    data_service.create_table(
+                                        name=table_name,
+                                        layer=target_layer,
+                                        schema_definition=schema_def,
+                                        row_count=df.shape[0],
+                                        size_bytes=len(uploaded_file.getvalue()),
+                                    )
+                                    st.success(f"Created table: {target_layer}.{table_name}")
+
+                                for i in range(50, 100):
+                                    time.sleep(0.01)
+                                    progress.progress(i + 1)
+
+                                st.success(f"Ingested {df.shape[0]:,} rows to {target_layer}.{table_name}")
+
+
+def show_data_tables_section():
+    """Show existing data tables."""
+    st.subheader("Data Tables")
+
+    data_service = get_data_service()
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        search = st.text_input("Search tables", placeholder="Filter by name...")
+    with col2:
+        layer_filter = st.selectbox("Layer", ["All", "bronze", "silver", "gold"])
+
+    layer = layer_filter if layer_filter != "All" else None
+    tables = data_service.list_tables(layer=layer)
+
+    if search:
+        tables = [t for t in tables if search.lower() in t.name.lower()]
+
+    if not tables:
+        st.info("No data tables found. Upload files to create tables.")
+        return
+
+    st.markdown(f"**{len(tables)} table(s) found**")
+
+    col_headers = st.columns([2, 1, 1, 1, 1])
+    col_headers[0].markdown("**Table Name**")
+    col_headers[1].markdown("**Layer**")
+    col_headers[2].markdown("**Rows**")
+    col_headers[3].markdown("**Size**")
+    col_headers[4].markdown("**Updated**")
+
+    for table in tables:
+        cols = st.columns([2, 1, 1, 1, 1])
+        cols[0].markdown(f"**{table.name}**")
+        cols[1].markdown(table.layer)
+        cols[2].markdown(f"{table.row_count:,}")
+
+        size_kb = (table.size_bytes or 0) / 1024
+        if size_kb > 1024:
+            cols[3].markdown(f"{size_kb/1024:.1f} MB")
+        else:
+            cols[3].markdown(f"{size_kb:.1f} KB")
+
+        cols[4].markdown(table.updated_at.strftime("%Y-%m-%d %H:%M"))
+
+        with st.expander(f"Details: {table.name}"):
+            schema = table.schema_definition or {}
+            columns = schema.get("columns", [])
+
+            if columns:
+                st.markdown("**Schema:**")
+                for col in columns:
+                    st.text(f"  {col.get('name')}: {col.get('dtype')}")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if table.quality_score:
+                    st.metric("Quality Score", f"{table.quality_score:.1f}%")
+            with col2:
+                if st.button("Delete", key=f"delete_table_{table.id}"):
+                    data_service.delete_table(table.id)
+                    st.success(f"Table '{table.name}' deleted.")
+                    st.rerun()
 
 
 def show_database_connection_section():
