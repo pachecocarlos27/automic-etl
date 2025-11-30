@@ -4,35 +4,36 @@
 **Automic ETL** is an AI-augmented ETL tool for building data lakehouses with medallion architecture (Bronze/Silver/Gold). It features LLM integration for intelligent data processing, supports multiple cloud storage providers, and includes both a Streamlit web UI and FastAPI backend.
 
 ## Recent Changes
+- **2025-11-30**: Full database-backed functionality implemented
+  - **Authentication System**:
+    - AuthService with bcrypt password hashing
+    - SessionModel for persistent database-backed sessions
+    - Superadmin account auto-seeding from environment secrets
+  - **Pipeline Management**:
+    - PipelineService with full CRUD operations (create, list, update, delete)
+    - Pipeline runs tracking with status, metrics, and error handling
+    - User-owned pipelines with proper filtering
+  - **Data Ingestion**:
+    - File upload with Polars preview (CSV, Parquet, JSON)
+    - DataService for persisting table metadata (row count, size, schema)
+    - Medallion layer assignment (bronze, silver, gold)
+  - **Monitoring Dashboard**:
+    - Real-time statistics from database (pipelines, runs, tables)
+    - Medallion layer breakdown with counts and sizes
+    - Recent activity feed from actual pipeline runs
+  - **Admin Dashboard**:
+    - User management (view, approve, suspend)
+    - Session management
+    - Audit log viewer
 - **2025-11-30**: UI/UX modernization completed
-  - Redesigned theme system with modern professional color palette:
-    - Primary blue (#0066FF) with teal accent (#00D4AA)
-    - Clean Inter font typography
-    - Dark sidebar gradient (#0F172A to #1E293B)
-  - **Login page modernization**:
-    - Clean centered card layout with gradient logo icon
-    - Hidden sidebar for focused authentication experience
-    - Modern tab styling for Login/Register toggle
-    - Polished form inputs with hover/focus transitions
-    - Gradient blue buttons with hover elevation effects
-  - **Accessibility-compliant skip link**:
-    - Visually hidden but accessible to screen readers
-    - Becomes visible with blue accent styling on keyboard focus
-    - Uses proper sr-only pattern (clip rect, absolute positioning)
-  - **Sidebar navigation enhancements**:
-    - Increased text contrast (#F8FAFC) for better readability
-    - Improved hover states with subtle backgrounds
-    - Active state with gradient background indicator
-    - Better visual hierarchy throughout
-  - Redesigned dashboard home with colorful metric cards and responsive grid layout
-  - Improved medallion architecture cards with colored top borders
-  - Created comprehensive design system in theme.py with reusable CSS classes
+  - Redesigned theme system with modern professional color palette
+  - Clean centered login card with hidden sidebar
+  - Accessibility-compliant skip link for screen readers
+  - Improved navigation with better contrast and hover states
 - **2025-11-30**: Initial Replit setup completed
-  - Installed Python 3.11 and all dependencies from pyproject.toml
-  - Configured Streamlit UI to run on port 5000 with 0.0.0.0 host binding
-  - Created workflow for Streamlit UI (frontend only)
-  - Configured deployment settings for autoscale deployment
-  - Updated .gitignore for Python and Replit-specific files
+  - PostgreSQL database configured via DATABASE_URL
+  - Streamlit UI workflow on port 5000
+  - Autoscale deployment configured
 
 ## Project Architecture
 
@@ -54,6 +55,21 @@
 - **Location**: `src/automic_etl/api/`
 - **Main Entry**: `src/automic_etl/api/main.py`
 - **Note**: Backend API is available but not currently configured as a workflow. The Streamlit UI operates independently.
+
+### Database Layer
+- **Location**: `src/automic_etl/db/`
+- **Engine**: PostgreSQL via SQLAlchemy
+- **Models** (`models.py`):
+  - UserModel (authentication, roles)
+  - SessionModel (persistent sessions)
+  - PipelineModel (ETL pipeline definitions)
+  - PipelineRunModel (execution history)
+  - DataTableModel (ingested data metadata)
+  - AuditLogModel (activity tracking)
+- **Services**:
+  - AuthService: User authentication, password hashing, session management
+  - PipelineService: CRUD operations for pipelines and runs
+  - DataService: Data table metadata tracking
 
 ### Core Components
 - **Connectors**: Database, API, streaming, and file connectors (`src/automic_etl/connectors/`)
@@ -120,7 +136,10 @@ Configured for autoscale deployment:
 *No specific user preferences documented yet*
 
 ## Notes
-- The application can run in development mode without cloud credentials by using local SQLite catalog
+- PostgreSQL database is automatically initialized with tables on first startup
+- Superadmin account is created/updated from SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD secrets
+- Sessions persist in the database and survive page refreshes
+- All pipeline and data operations are backed by real database storage
 - LLM features require API keys but the core ETL functionality works without them
 - Backend API is available but not required for the Streamlit UI to function
-- For production use, configure appropriate cloud storage and database credentials
+- For production use, configure appropriate cloud storage credentials for actual data persistence
