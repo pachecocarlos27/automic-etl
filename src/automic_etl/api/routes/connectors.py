@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
 from automic_etl.api.models import (
     ConnectorConfig,
@@ -15,6 +15,18 @@ from automic_etl.api.models import (
     ConnectorType,
     PaginatedResponse,
     BaseResponse,
+)
+from automic_etl.api.middleware import (
+    get_security_context,
+    require_permission,
+    filter_by_company,
+    check_resource_access,
+)
+from automic_etl.auth.models import PermissionType
+from automic_etl.auth.security import (
+    SecurityContext,
+    ResourceType,
+    AccessLevel,
 )
 
 router = APIRouter()
@@ -71,6 +83,7 @@ async def list_connectors(
     page_size: int = 20,
     type: ConnectorType | None = None,
     enabled: bool | None = None,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_READ)),
 ):
     """
     List all configured connectors.
@@ -81,7 +94,8 @@ async def list_connectors(
         type: Filter by connector type
         enabled: Filter by enabled status
     """
-    connectors = list(_connectors.values())
+    # Filter by company (multi-tenant isolation)
+    connectors = filter_by_company(ctx, list(_connectors.values()))
 
     # Apply filters
     if type:
@@ -104,7 +118,10 @@ async def list_connectors(
 
 
 @router.post("", response_model=ConnectorResponse, status_code=201)
-async def create_connector(config: ConnectorConfig):
+async def create_connector(
+    config: ConnectorConfig,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_CREATE)),
+):
     """
     Create a new connector.
 
@@ -119,8 +136,9 @@ async def create_connector(config: ConnectorConfig):
             detail=f"Invalid subtype '{config.subtype}' for type '{config.type}'"
         )
 
-    # Check for duplicate name
-    if any(c["name"] == config.name for c in _connectors.values()):
+    # Check for duplicate name within company
+    company_connectors = filter_by_company(ctx, list(_connectors.values()))
+    if any(c["name"] == config.name for c in company_connectors):
         raise HTTPException(status_code=400, detail=f"Connector '{config.name}' already exists")
 
     connector_id = str(uuid.uuid4())
@@ -128,6 +146,8 @@ async def create_connector(config: ConnectorConfig):
 
     connector_data = {
         "id": connector_id,
+        "company_id": ctx.tenant.company_id,  # Multi-tenant: associate with company
+        "created_by": ctx.user.user_id,
         "type": config.type,
         "subtype": config.subtype,
         "name": config.name,
@@ -144,7 +164,10 @@ async def create_connector(config: ConnectorConfig):
 
 
 @router.get("/{connector_id}", response_model=ConnectorResponse)
-async def get_connector(connector_id: str):
+async def get_connector(
+    connector_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_READ)),
+):
     """
     Get a connector by ID.
 
@@ -154,11 +177,23 @@ async def get_connector(connector_id: str):
     if connector_id not in _connectors:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    return ConnectorResponse(**_connectors[connector_id])
+    connector = _connectors[connector_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.READ
+    )
+
+    return ConnectorResponse(**connector)
 
 
 @router.put("/{connector_id}", response_model=ConnectorResponse)
-async def update_connector(connector_id: str, config: ConnectorConfig):
+async def update_connector(
+    connector_id: str,
+    config: ConnectorConfig,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_UPDATE)),
+):
     """
     Update a connector.
 
@@ -171,6 +206,12 @@ async def update_connector(connector_id: str, config: ConnectorConfig):
 
     connector = _connectors[connector_id]
 
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.WRITE
+    )
+
     # Update fields
     connector["name"] = config.name
     connector["description"] = config.description
@@ -181,7 +222,10 @@ async def update_connector(connector_id: str, config: ConnectorConfig):
 
 
 @router.delete("/{connector_id}", response_model=BaseResponse)
-async def delete_connector(connector_id: str):
+async def delete_connector(
+    connector_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_DELETE)),
+):
     """
     Delete a connector.
 
@@ -191,14 +235,25 @@ async def delete_connector(connector_id: str):
     if connector_id not in _connectors:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    name = _connectors[connector_id]["name"]
+    connector = _connectors[connector_id]
+
+    # Check tenant access with ADMIN level for delete
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.ADMIN
+    )
+
+    name = connector["name"]
     del _connectors[connector_id]
 
     return BaseResponse(success=True, message=f"Connector '{name}' deleted")
 
 
 @router.post("/{connector_id}/test", response_model=ConnectorTestResult)
-async def test_connector(connector_id: str):
+async def test_connector(
+    connector_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_READ)),
+):
     """
     Test a connector connection.
 
@@ -209,6 +264,12 @@ async def test_connector(connector_id: str):
         raise HTTPException(status_code=404, detail="Connector not found")
 
     connector = _connectors[connector_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.READ
+    )
 
     # In production, this would actually test the connection
     # For demo, simulate a test
@@ -243,7 +304,10 @@ async def test_connector(connector_id: str):
 
 
 @router.post("/{connector_id}/enable", response_model=ConnectorResponse)
-async def enable_connector(connector_id: str):
+async def enable_connector(
+    connector_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_UPDATE)),
+):
     """
     Enable a connector.
 
@@ -253,12 +317,23 @@ async def enable_connector(connector_id: str):
     if connector_id not in _connectors:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    _connectors[connector_id]["enabled"] = True
-    return ConnectorResponse(**_connectors[connector_id])
+    connector = _connectors[connector_id]
+
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.WRITE
+    )
+
+    connector["enabled"] = True
+    return ConnectorResponse(**connector)
 
 
 @router.post("/{connector_id}/disable", response_model=ConnectorResponse)
-async def disable_connector(connector_id: str):
+async def disable_connector(
+    connector_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_UPDATE)),
+):
     """
     Disable a connector.
 
@@ -268,13 +343,24 @@ async def disable_connector(connector_id: str):
     if connector_id not in _connectors:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    _connectors[connector_id]["enabled"] = False
-    _connectors[connector_id]["status"] = "disconnected"
-    return ConnectorResponse(**_connectors[connector_id])
+    connector = _connectors[connector_id]
+
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.WRITE
+    )
+
+    connector["enabled"] = False
+    connector["status"] = "disconnected"
+    return ConnectorResponse(**connector)
 
 
 @router.get("/{connector_id}/schema")
-async def get_connector_schema(connector_id: str):
+async def get_connector_schema(
+    connector_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_READ)),
+):
     """
     Get schema/metadata from a connector.
 
@@ -285,6 +371,12 @@ async def get_connector_schema(connector_id: str):
         raise HTTPException(status_code=404, detail="Connector not found")
 
     connector = _connectors[connector_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.READ
+    )
 
     # In production, this would fetch actual schema
     # For demo, return sample schema based on type
@@ -334,6 +426,7 @@ async def preview_connector_data(
     table: str | None = None,
     path: str | None = None,
     limit: int = 10,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.CONNECTOR_READ)),
 ):
     """
     Preview data from a connector.
@@ -348,6 +441,13 @@ async def preview_connector_data(
         raise HTTPException(status_code=404, detail="Connector not found")
 
     connector = _connectors[connector_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.CONNECTOR, connector_id,
+        connector.get("company_id", ""), AccessLevel.READ
+    )
+
     connector["last_used"] = datetime.utcnow()
 
     # Return sample preview data

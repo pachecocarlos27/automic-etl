@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
 from automic_etl.api.models import (
     TableCreate,
@@ -17,6 +17,20 @@ from automic_etl.api.models import (
     DataTier,
     PaginatedResponse,
     BaseResponse,
+)
+from automic_etl.api.middleware import (
+    get_security_context,
+    require_permission,
+    require_data_tier,
+    filter_by_company,
+    check_resource_access,
+    apply_rls_filters,
+)
+from automic_etl.auth.models import PermissionType
+from automic_etl.auth.security import (
+    SecurityContext,
+    ResourceType,
+    AccessLevel,
 )
 
 router = APIRouter()
@@ -32,6 +46,7 @@ async def list_tables(
     tier: DataTier | None = None,
     tag: str | None = None,
     search: str | None = None,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_READ)),
 ):
     """
     List all tables with pagination and filtering.
@@ -43,7 +58,11 @@ async def list_tables(
         tag: Filter by tag
         search: Search in name and description
     """
-    tables = list(_tables.values())
+    # Filter by company (multi-tenant isolation)
+    tables = filter_by_company(ctx, list(_tables.values()))
+
+    # Filter by accessible data tiers
+    tables = [t for t in tables if ctx.can_access_tier(t.get("tier", "bronze"))]
 
     # Apply filters
     if tier:
@@ -72,15 +91,26 @@ async def list_tables(
 
 
 @router.post("", response_model=TableResponse, status_code=201)
-async def create_table(table: TableCreate):
+async def create_table(
+    table: TableCreate,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_CREATE)),
+):
     """
     Create a new table.
 
     Args:
         table: Table configuration
     """
-    # Check for duplicate name in same tier
-    if any(t["name"] == table.name and t["tier"] == table.tier for t in _tables.values()):
+    # Check tier access
+    if not ctx.can_access_tier(table.tier.value):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Access denied to {table.tier.value} tier"
+        )
+
+    # Check for duplicate name in same tier within company
+    company_tables = filter_by_company(ctx, list(_tables.values()))
+    if any(t["name"] == table.name and t["tier"] == table.tier for t in company_tables):
         raise HTTPException(
             status_code=400,
             detail=f"Table '{table.name}' already exists in {table.tier} tier"
@@ -94,6 +124,8 @@ async def create_table(table: TableCreate):
 
     table_data = {
         "id": table_id,
+        "company_id": ctx.tenant.company_id,  # Multi-tenant: associate with company
+        "created_by": ctx.user.user_id,
         "name": table.name,
         "tier": table.tier,
         "columns": [c.model_dump() for c in table.columns],
@@ -113,7 +145,10 @@ async def create_table(table: TableCreate):
 
 
 @router.get("/{table_id}", response_model=TableResponse)
-async def get_table(table_id: str):
+async def get_table(
+    table_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_READ)),
+):
     """
     Get a table by ID.
 
@@ -123,11 +158,27 @@ async def get_table(table_id: str):
     if table_id not in _tables:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    return TableResponse(**_tables[table_id])
+    table = _tables[table_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.READ
+    )
+
+    # Check tier access
+    if not ctx.can_access_tier(table.get("tier", "bronze")):
+        raise HTTPException(status_code=403, detail=f"Access denied to {table.get('tier')} tier")
+
+    return TableResponse(**table)
 
 
 @router.get("/by-name/{tier}/{table_name}", response_model=TableResponse)
-async def get_table_by_name(tier: DataTier, table_name: str):
+async def get_table_by_name(
+    tier: DataTier,
+    table_name: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_READ)),
+):
     """
     Get a table by tier and name.
 
@@ -135,7 +186,14 @@ async def get_table_by_name(tier: DataTier, table_name: str):
         tier: Data tier
         table_name: Table name
     """
-    for table in _tables.values():
+    # Check tier access
+    if not ctx.can_access_tier(tier.value):
+        raise HTTPException(status_code=403, detail=f"Access denied to {tier.value} tier")
+
+    # Filter by company first
+    company_tables = filter_by_company(ctx, list(_tables.values()))
+
+    for table in company_tables:
         if table["tier"] == tier and table["name"] == table_name:
             return TableResponse(**table)
 
@@ -143,7 +201,11 @@ async def get_table_by_name(tier: DataTier, table_name: str):
 
 
 @router.delete("/{table_id}", response_model=BaseResponse)
-async def delete_table(table_id: str, drop_data: bool = False):
+async def delete_table(
+    table_id: str,
+    drop_data: bool = False,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_DELETE)),
+):
     """
     Delete a table.
 
@@ -155,6 +217,12 @@ async def delete_table(table_id: str, drop_data: bool = False):
         raise HTTPException(status_code=404, detail="Table not found")
 
     table = _tables[table_id]
+
+    # Check tenant access with ADMIN level for delete
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.ADMIN
+    )
 
     if drop_data:
         # In production, this would delete the actual data
@@ -169,7 +237,11 @@ async def delete_table(table_id: str, drop_data: bool = False):
 
 
 @router.post("/{table_id}/data", response_model=TableDataResponse)
-async def query_table_data(table_id: str, request: TableDataRequest):
+async def query_table_data(
+    table_id: str,
+    request: TableDataRequest,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_READ)),
+):
     """
     Query data from a table.
 
@@ -182,8 +254,18 @@ async def query_table_data(table_id: str, request: TableDataRequest):
 
     table = _tables[table_id]
 
-    # In production, this would query actual data
-    # For demo, return sample data
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.READ
+    )
+
+    # Check tier access
+    if not ctx.can_access_tier(table.get("tier", "bronze")):
+        raise HTTPException(status_code=403, detail=f"Access denied to {table.get('tier')} tier")
+
+    # In production, this would query actual data with RLS filters applied
+    # RLS filters would be applied via: apply_rls_filters(ctx, table["name"], query)
     columns = request.columns or [c["name"] for c in table["columns"]]
 
     # Generate sample data
@@ -215,7 +297,10 @@ async def query_table_data(table_id: str, request: TableDataRequest):
 
 
 @router.get("/{table_id}/schema", response_model=list[ColumnSchema])
-async def get_table_schema(table_id: str):
+async def get_table_schema(
+    table_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_READ)),
+):
     """
     Get table schema (columns).
 
@@ -225,11 +310,23 @@ async def get_table_schema(table_id: str):
     if table_id not in _tables:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    return [ColumnSchema(**c) for c in _tables[table_id]["columns"]]
+    table = _tables[table_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.READ
+    )
+
+    return [ColumnSchema(**c) for c in table["columns"]]
 
 
 @router.put("/{table_id}/schema", response_model=TableResponse)
-async def update_table_schema(table_id: str, columns: list[ColumnSchema]):
+async def update_table_schema(
+    table_id: str,
+    columns: list[ColumnSchema],
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_UPDATE)),
+):
     """
     Update table schema.
 
@@ -241,6 +338,13 @@ async def update_table_schema(table_id: str, columns: list[ColumnSchema]):
         raise HTTPException(status_code=404, detail="Table not found")
 
     table = _tables[table_id]
+
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.WRITE
+    )
+
     table["columns"] = [c.model_dump() for c in columns]
     table["updated_at"] = datetime.utcnow()
 
@@ -248,7 +352,11 @@ async def update_table_schema(table_id: str, columns: list[ColumnSchema]):
 
 
 @router.post("/{table_id}/columns", response_model=TableResponse)
-async def add_column(table_id: str, column: ColumnSchema):
+async def add_column(
+    table_id: str,
+    column: ColumnSchema,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_UPDATE)),
+):
     """
     Add a column to a table.
 
@@ -261,6 +369,12 @@ async def add_column(table_id: str, column: ColumnSchema):
 
     table = _tables[table_id]
 
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.WRITE
+    )
+
     # Check for duplicate column
     if any(c["name"] == column.name for c in table["columns"]):
         raise HTTPException(status_code=400, detail=f"Column '{column.name}' already exists")
@@ -272,7 +386,11 @@ async def add_column(table_id: str, column: ColumnSchema):
 
 
 @router.delete("/{table_id}/columns/{column_name}", response_model=TableResponse)
-async def drop_column(table_id: str, column_name: str):
+async def drop_column(
+    table_id: str,
+    column_name: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_UPDATE)),
+):
     """
     Drop a column from a table.
 
@@ -284,6 +402,12 @@ async def drop_column(table_id: str, column_name: str):
         raise HTTPException(status_code=404, detail="Table not found")
 
     table = _tables[table_id]
+
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.WRITE
+    )
 
     # Find and remove column
     original_count = len(table["columns"])
@@ -298,7 +422,10 @@ async def drop_column(table_id: str, column_name: str):
 
 
 @router.get("/{table_id}/profile")
-async def get_table_profile(table_id: str):
+async def get_table_profile(
+    table_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_READ)),
+):
     """
     Get data profile for a table.
 
@@ -309,6 +436,12 @@ async def get_table_profile(table_id: str):
         raise HTTPException(status_code=404, detail="Table not found")
 
     table = _tables[table_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.READ
+    )
 
     # In production, this would compute actual profile
     profile = {
@@ -337,7 +470,11 @@ async def get_table_profile(table_id: str):
 
 
 @router.post("/{table_id}/tags", response_model=TableResponse)
-async def add_tags(table_id: str, tags: list[str]):
+async def add_tags(
+    table_id: str,
+    tags: list[str],
+    ctx: SecurityContext = Depends(require_permission(PermissionType.TABLE_UPDATE)),
+):
     """
     Add tags to a table.
 
@@ -349,6 +486,13 @@ async def add_tags(table_id: str, tags: list[str]):
         raise HTTPException(status_code=404, detail="Table not found")
 
     table = _tables[table_id]
+
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.TABLE, table_id,
+        table.get("company_id", ""), AccessLevel.WRITE
+    )
+
     existing_tags = set(table.get("tags", []))
     existing_tags.update(tags)
     table["tags"] = list(existing_tags)

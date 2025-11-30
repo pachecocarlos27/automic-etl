@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Depends
 
 from automic_etl.api.models import (
     PipelineCreate,
@@ -17,6 +17,19 @@ from automic_etl.api.models import (
     PipelineStatus,
     PaginatedResponse,
     BaseResponse,
+)
+from automic_etl.api.middleware import (
+    get_security_context,
+    require_permission,
+    require_resource_access,
+    filter_by_company,
+    check_resource_access,
+)
+from automic_etl.auth.models import PermissionType
+from automic_etl.auth.security import (
+    SecurityContext,
+    ResourceType,
+    AccessLevel,
 )
 
 router = APIRouter()
@@ -33,6 +46,7 @@ async def list_pipelines(
     status: PipelineStatus | None = None,
     tag: str | None = None,
     search: str | None = None,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_READ)),
 ):
     """
     List all pipelines with pagination and filtering.
@@ -44,7 +58,8 @@ async def list_pipelines(
         tag: Filter by tag
         search: Search in name and description
     """
-    pipelines = list(_pipelines.values())
+    # Filter by company (multi-tenant isolation)
+    pipelines = filter_by_company(ctx, list(_pipelines.values()))
 
     # Apply filters
     if status:
@@ -74,15 +89,19 @@ async def list_pipelines(
 
 
 @router.post("", response_model=PipelineResponse, status_code=201)
-async def create_pipeline(pipeline: PipelineCreate):
+async def create_pipeline(
+    pipeline: PipelineCreate,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_CREATE)),
+):
     """
     Create a new pipeline.
 
     Args:
         pipeline: Pipeline configuration
     """
-    # Check for duplicate name
-    if any(p["name"] == pipeline.name for p in _pipelines.values()):
+    # Check for duplicate name within company
+    company_pipelines = filter_by_company(ctx, list(_pipelines.values()))
+    if any(p["name"] == pipeline.name for p in company_pipelines):
         raise HTTPException(status_code=400, detail=f"Pipeline '{pipeline.name}' already exists")
 
     pipeline_id = str(uuid.uuid4())
@@ -90,6 +109,8 @@ async def create_pipeline(pipeline: PipelineCreate):
 
     pipeline_data = {
         "id": pipeline_id,
+        "company_id": ctx.tenant.company_id,  # Multi-tenant: associate with company
+        "created_by": ctx.user.user_id,
         "name": pipeline.name,
         "description": pipeline.description,
         "stages": [s.model_dump() for s in pipeline.stages],
@@ -108,7 +129,10 @@ async def create_pipeline(pipeline: PipelineCreate):
 
 
 @router.get("/{pipeline_id}", response_model=PipelineResponse)
-async def get_pipeline(pipeline_id: str):
+async def get_pipeline(
+    pipeline_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_READ)),
+):
     """
     Get a pipeline by ID.
 
@@ -118,11 +142,23 @@ async def get_pipeline(pipeline_id: str):
     if pipeline_id not in _pipelines:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    return PipelineResponse(**_pipelines[pipeline_id])
+    pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.READ
+    )
+
+    return PipelineResponse(**pipeline)
 
 
 @router.put("/{pipeline_id}", response_model=PipelineResponse)
-async def update_pipeline(pipeline_id: str, update: PipelineUpdate):
+async def update_pipeline(
+    pipeline_id: str,
+    update: PipelineUpdate,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_UPDATE)),
+):
     """
     Update a pipeline.
 
@@ -134,6 +170,12 @@ async def update_pipeline(pipeline_id: str, update: PipelineUpdate):
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
     pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access with WRITE level
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.WRITE
+    )
 
     # Apply updates
     if update.description is not None:
@@ -155,7 +197,10 @@ async def update_pipeline(pipeline_id: str, update: PipelineUpdate):
 
 
 @router.delete("/{pipeline_id}", response_model=BaseResponse)
-async def delete_pipeline(pipeline_id: str):
+async def delete_pipeline(
+    pipeline_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_DELETE)),
+):
     """
     Delete a pipeline.
 
@@ -164,6 +209,14 @@ async def delete_pipeline(pipeline_id: str):
     """
     if pipeline_id not in _pipelines:
         raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access with ADMIN level for delete
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.ADMIN
+    )
 
     del _pipelines[pipeline_id]
 
@@ -175,6 +228,7 @@ async def run_pipeline(
     pipeline_id: str,
     request: PipelineRunRequest,
     background_tasks: BackgroundTasks,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_EXECUTE)),
 ):
     """
     Trigger a pipeline run.
@@ -187,6 +241,12 @@ async def run_pipeline(
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
     pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access with EXECUTE level
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.EXECUTE
+    )
 
     if not pipeline["enabled"]:
         raise HTTPException(status_code=400, detail="Pipeline is disabled")
@@ -255,6 +315,7 @@ async def list_pipeline_runs(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status: PipelineStatus | None = None,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_READ)),
 ):
     """
     List runs for a pipeline.
@@ -267,6 +328,14 @@ async def list_pipeline_runs(
     """
     if pipeline_id not in _pipelines:
         raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.READ
+    )
 
     runs = [r for r in _pipeline_runs.values() if r["pipeline_id"] == pipeline_id]
 
@@ -290,7 +359,11 @@ async def list_pipeline_runs(
 
 
 @router.get("/{pipeline_id}/runs/{run_id}", response_model=PipelineRunResponse)
-async def get_pipeline_run(pipeline_id: str, run_id: str):
+async def get_pipeline_run(
+    pipeline_id: str,
+    run_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_READ)),
+):
     """
     Get details of a specific pipeline run.
 
@@ -298,6 +371,17 @@ async def get_pipeline_run(pipeline_id: str, run_id: str):
         pipeline_id: Pipeline ID
         run_id: Run ID
     """
+    if pipeline_id not in _pipelines:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.READ
+    )
+
     if run_id not in _pipeline_runs:
         raise HTTPException(status_code=404, detail="Pipeline run not found")
 
@@ -309,7 +393,11 @@ async def get_pipeline_run(pipeline_id: str, run_id: str):
 
 
 @router.post("/{pipeline_id}/runs/{run_id}/cancel", response_model=BaseResponse)
-async def cancel_pipeline_run(pipeline_id: str, run_id: str):
+async def cancel_pipeline_run(
+    pipeline_id: str,
+    run_id: str,
+    ctx: SecurityContext = Depends(require_permission(PermissionType.PIPELINE_EXECUTE)),
+):
     """
     Cancel a running pipeline.
 
@@ -317,6 +405,17 @@ async def cancel_pipeline_run(pipeline_id: str, run_id: str):
         pipeline_id: Pipeline ID
         run_id: Run ID
     """
+    if pipeline_id not in _pipelines:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    pipeline = _pipelines[pipeline_id]
+
+    # Check tenant access with EXECUTE level (same as running)
+    check_resource_access(
+        ctx, ResourceType.PIPELINE, pipeline_id,
+        pipeline.get("company_id", ""), AccessLevel.EXECUTE
+    )
+
     if run_id not in _pipeline_runs:
         raise HTTPException(status_code=404, detail="Pipeline run not found")
 

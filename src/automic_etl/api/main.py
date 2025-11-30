@@ -11,6 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from automic_etl.api.middleware import (
+    TenantMiddleware,
+    AuditMiddleware,
+    RateLimitMiddleware,
+    MaintenanceModeMiddleware,
+)
+from automic_etl.auth.security import AccessDeniedError, TenantMismatchError
+
 logger = logging.getLogger(__name__)
 
 # Global app instance
@@ -83,7 +91,38 @@ def create_app(
         allow_headers=["*"],
     )
 
+    # Add security middleware (order matters - last added runs first)
+    # 1. Maintenance mode check (runs first)
+    app.add_middleware(MaintenanceModeMiddleware)
+    # 2. Rate limiting
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+    # 3. Audit logging
+    app.add_middleware(AuditMiddleware)
+    # 4. Tenant context injection (runs last, closest to route)
+    app.add_middleware(TenantMiddleware)
+
     # Add exception handlers
+    @app.exception_handler(AccessDeniedError)
+    async def access_denied_handler(request: Request, exc: AccessDeniedError):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error": "Access Denied",
+                "detail": str(exc),
+            },
+        )
+
+    @app.exception_handler(TenantMismatchError)
+    async def tenant_mismatch_handler(request: Request, exc: TenantMismatchError):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error": "Tenant Mismatch",
+                "detail": str(exc),
+            },
+        )
+
+    # Add validation exception handlers
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         return JSONResponse(

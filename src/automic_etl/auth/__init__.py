@@ -39,6 +39,21 @@ from automic_etl.auth.superadmin import (
     SystemHealth,
 )
 
+# Security and access control
+from automic_etl.auth.security import (
+    SecurityContext,
+    SecurityManager,
+    get_security_manager,
+    CompanyRole,
+    ResourcePermission,
+    RowLevelPolicy,
+    DataTierAccess,
+    ResourceType,
+    AccessLevel,
+    AccessDeniedError,
+    TenantMismatchError,
+)
+
 __all__ = [
     # Core models
     "User",
@@ -77,4 +92,16 @@ __all__ = [
     "SuperadminError",
     "GlobalSettings",
     "SystemHealth",
+    # Security and access control
+    "SecurityContext",
+    "SecurityManager",
+    "get_security_manager",
+    "CompanyRole",
+    "ResourcePermission",
+    "RowLevelPolicy",
+    "DataTierAccess",
+    "ResourceType",
+    "AccessLevel",
+    "AccessDeniedError",
+    "TenantMismatchError",
 ]
