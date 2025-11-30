@@ -7,6 +7,8 @@ from automic_etl.api.routes import queries
 from automic_etl.api.routes import connectors
 from automic_etl.api.routes import lineage
 from automic_etl.api.routes import jobs
+from automic_etl.api.routes import companies
+from automic_etl.api.routes import admin
 
 __all__ = [
     "health",
@@ -16,4 +18,6 @@ __all__ = [
     "connectors",
     "lineage",
     "jobs",
+    "companies",
+    "admin",
 ]

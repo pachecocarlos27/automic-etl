@@ -66,6 +66,8 @@ def create_app(
             {"name": "connectors", "description": "Data source connectors"},
             {"name": "lineage", "description": "Data lineage"},
             {"name": "jobs", "description": "Job orchestration"},
+            {"name": "companies", "description": "Company/organization management"},
+            {"name": "admin", "description": "Superadmin controls"},
         ],
     )
 
@@ -104,7 +106,17 @@ def create_app(
         )
 
     # Include routers
-    from automic_etl.api.routes import health, pipelines, tables, queries, connectors, lineage, jobs
+    from automic_etl.api.routes import (
+        health,
+        pipelines,
+        tables,
+        queries,
+        connectors,
+        lineage,
+        jobs,
+        companies,
+        admin,
+    )
 
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
     app.include_router(pipelines.router, prefix="/api/v1/pipelines", tags=["pipelines"])
@@ -113,6 +125,8 @@ def create_app(
     app.include_router(connectors.router, prefix="/api/v1/connectors", tags=["connectors"])
     app.include_router(lineage.router, prefix="/api/v1/lineage", tags=["lineage"])
     app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
+    app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
+    app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 
     return app
 

@@ -7,6 +7,8 @@ from automic_etl.ui.pages.query_studio import show_query_studio_page
 from automic_etl.ui.pages.monitoring import show_monitoring_page
 from automic_etl.ui.pages.settings import show_settings_page
 from automic_etl.ui.pages.lineage import show_lineage_page
+from automic_etl.ui.pages.company_admin import show_company_admin
+from automic_etl.ui.pages.superadmin import show_superadmin
 
 __all__ = [
     "show_ingestion_page",
@@ -16,4 +18,6 @@ __all__ = [
     "show_monitoring_page",
     "show_settings_page",
     "show_lineage_page",
+    "show_company_admin",
+    "show_superadmin",
 ]
