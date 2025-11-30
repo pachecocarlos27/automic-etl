@@ -2,46 +2,53 @@
 
 **AI-Augmented ETL Tool for Lakehouse Architecture**
 
-Automic ETL is a comprehensive data engineering platform that builds lakehouses using the medallion architecture (Bronze/Silver/Gold) on cloud storage (AWS S3, GCS, Azure Blob) with Apache Iceberg tables. It features LLM integration for intelligent processing of unstructured, semi-structured, and structured data.
+Automic ETL is a comprehensive data engineering platform that builds lakehouses using the medallion architecture (Bronze/Silver/Gold) on cloud storage (AWS S3, GCS, Azure Blob) with Apache Iceberg and Delta Lake tables. It features LLM integration for intelligent processing of unstructured, semi-structured, and structured data.
 
 ## Features
 
-### Multi-Cloud Storage
-- **AWS S3** with IAM authentication
-- **Google Cloud Storage** with service account
-- **Azure Blob Storage / ADLS Gen2** with SAS/managed identity
-- Unified interface for all providers
+### Core Capabilities
 
-### Medallion Architecture
-- **Bronze Layer**: Raw data ingestion, preserves original format
-- **Silver Layer**: Cleaned, validated, deduplicated data
-- **Gold Layer**: Business-level aggregations, ML-ready datasets
-
-### Apache Iceberg Integration
-- ACID transactions
-- Schema evolution
-- Time travel queries
-- Partition evolution
-- Efficient incremental processing
+| Feature | Description |
+|---------|-------------|
+| **Medallion Architecture** | Bronze/Silver/Gold data layers with automatic transformations |
+| **Multi-Cloud Storage** | AWS S3, Google Cloud Storage, Azure Blob Storage |
+| **Table Formats** | Apache Iceberg and Delta Lake support |
+| **LLM Augmentation** | Schema inference, entity extraction, NL-to-SQL |
+| **Data Quality** | Validation rules, profiling, anomaly detection |
+| **Data Lineage** | Full lineage tracking with impact analysis |
+| **REST API** | Complete API for programmatic access |
+| **Web UI** | Streamlit-based dashboard with theming |
 
 ### Data Connectors
-- **Databases**: PostgreSQL, MySQL, MongoDB, Snowflake, BigQuery
-- **Files**: CSV, JSON, Parquet, Excel, XML
-- **APIs**: REST, GraphQL, Salesforce
-- **Unstructured**: PDF, Images, Documents, Audio, Video
-- **Streaming**: Kafka, Kinesis
 
-### LLM Augmentation
-- Schema inference from unstructured data
-- Entity extraction from documents
-- Data classification and PII detection
-- Natural language to SQL queries
-- Anomaly detection and data quality assessment
+#### Databases
+- PostgreSQL, MySQL, MongoDB
+- Snowflake, BigQuery, Redshift
 
-### Extraction Modes
-- **Batch**: Full table/file extraction with parallelization
-- **Incremental**: Watermark-based change data capture
-- **SCD Type 2**: Slowly Changing Dimension with full history
+#### Streaming
+- Apache Kafka (with Schema Registry, Avro support)
+- AWS Kinesis (with Enhanced Fan-Out)
+- Google Pub/Sub
+
+#### APIs
+- REST API (generic)
+- Salesforce, HubSpot, Stripe
+
+#### Files & Storage
+- CSV, JSON, Parquet, Excel
+- AWS S3, Google Cloud Storage, Azure Blob
+- PDF and unstructured documents
+
+### Open Source Integrations
+
+| Tool | Integration |
+|------|-------------|
+| **Apache Spark** | Distributed processing with Delta Lake/Iceberg |
+| **dbt** | SQL transformations, model management |
+| **Great Expectations** | Data validation and profiling |
+| **Apache Airflow** | Workflow orchestration via REST API |
+| **MLflow** | Experiment tracking, model registry |
+| **OpenMetadata** | Data catalog and governance |
 
 ## Installation
 
@@ -52,9 +59,25 @@ pip install automic-etl
 Or install from source:
 
 ```bash
-git clone https://github.com/datantllc/automic-etl.git
+git clone https://github.com/pachecocarlos27/automic-etl.git
 cd automic-etl
 pip install -e .
+```
+
+### Optional Dependencies
+
+```bash
+# Streaming connectors
+pip install automic-etl[streaming]  # kafka, kinesis, pubsub
+
+# Open source integrations
+pip install automic-etl[spark]      # Apache Spark
+pip install automic-etl[dbt]        # dbt
+pip install automic-etl[ge]         # Great Expectations
+pip install automic-etl[mlflow]     # MLflow
+
+# All integrations
+pip install automic-etl[all]
 ```
 
 ## Quick Start
@@ -62,8 +85,7 @@ pip install -e .
 ### Initialize Lakehouse
 
 ```python
-from automic_etl import Settings
-from automic_etl.medallion import Lakehouse
+from automic_etl import Lakehouse
 
 # Initialize with default settings
 lakehouse = Lakehouse()
@@ -74,7 +96,8 @@ lakehouse.initialize()
 
 ```python
 import polars as pl
-from automic_etl.medallion import Lakehouse
+from automic_etl import Lakehouse
+from automic_etl.medallion.gold import AggregationType
 
 # Create lakehouse
 lakehouse = Lakehouse()
@@ -95,8 +118,6 @@ lakehouse.process_to_silver(
 )
 
 # Aggregate to Gold
-from automic_etl.medallion.gold import AggregationType
-
 lakehouse.aggregate_to_gold(
     silver_table="sales_clean",
     gold_table="daily_sales",
@@ -108,46 +129,32 @@ lakehouse.aggregate_to_gold(
 )
 ```
 
-### Database Extraction
+### Streaming Ingestion (Kafka)
 
 ```python
-from automic_etl.connectors import get_connector
-from automic_etl.extraction import IncrementalExtractor
+from automic_etl.connectors import KafkaConnector, KafkaConfig
 
-# Connect to PostgreSQL
-connector = get_connector(
-    "postgresql",
-    host="localhost",
-    database="mydb",
-    user="user",
-    password="password",
+config = KafkaConfig(
+    bootstrap_servers="localhost:9092",
+    topic="events",
+    group_id="automic-consumer",
+    value_deserializer="json"
 )
 
-# Incremental extraction
-with connector:
-    extractor = IncrementalExtractor(settings)
-    result = extractor.extract(
-        connector=connector,
-        source_name="postgres_orders",
-        watermark_column="updated_at",
-        table="orders",
-    )
-    print(f"Extracted {result.new_rows} new rows")
+with KafkaConnector(config) as kafka:
+    for batch in kafka.extract(batch_size=100):
+        lakehouse.ingest(
+            table_name="events",
+            data=batch,
+            source="kafka_stream",
+        )
 ```
 
-### LLM Augmentation
+### LLM-Powered Queries
 
 ```python
-from automic_etl.llm import EntityExtractor, QueryBuilder
+from automic_etl.llm import QueryBuilder
 
-# Extract entities from text
-extractor = EntityExtractor(settings)
-entities = extractor.extract(
-    text="Meeting with John Smith (john@acme.com) on Jan 15, 2024 about $50K deal.",
-    entity_types=["PERSON", "EMAIL", "DATE", "MONEY"],
-)
-
-# Natural language to SQL
 query_builder = QueryBuilder(settings)
 query_builder.register_dataframe("customers", df)
 
@@ -155,29 +162,111 @@ result = query_builder.build_query(
     "Show me all VIP customers with orders over $10,000"
 )
 print(result.sql)
+# SELECT * FROM customers WHERE tier = 'VIP' AND total_orders > 10000
 ```
 
-### SCD Type 2
+### Using Integrations
 
 ```python
-from automic_etl.medallion import SCDType2Manager
+# Apache Spark
+from automic_etl import SparkIntegration, SparkConfig
 
-scd2 = SCDType2Manager(settings)
-
-# Apply SCD2 changes
-result = scd2.apply_scd2(
-    source_df=updated_customers,
-    table_name="dim_customers",
-    business_keys=["customer_id"],
+spark = SparkIntegration(SparkConfig(
+    app_name="my-etl",
+    enable_delta=True
+))
+spark.start()
+df = spark.read_delta("s3://bucket/bronze/sales")
+spark.bronze_to_silver(
+    bronze_path="s3://bucket/bronze/sales",
+    silver_path="s3://bucket/silver/sales_clean",
+    dedupe_columns=["order_id"]
 )
 
-# Query point-in-time
-historical = scd2.get_record_at_time(
-    table_name="dim_customers",
-    business_key_values={"customer_id": "C001"},
-    as_of=datetime(2024, 1, 15),
+# dbt
+from automic_etl import DbtIntegration, DbtConfig
+
+dbt = DbtIntegration(DbtConfig(
+    project_dir="/path/to/dbt/project",
+    target="prod"
+))
+dbt.run(models=["staging.*", "marts.orders"])
+
+# Great Expectations
+from automic_etl import GreatExpectationsIntegration, GEConfig
+
+ge = GreatExpectationsIntegration(GEConfig(
+    project_dir="/path/to/ge/project"
+))
+results = ge.validate(data=df, suite_name="sales_validation")
+
+# MLflow
+from automic_etl import MLflowIntegration, MLflowConfig
+
+mlflow = MLflowIntegration(MLflowConfig(
+    tracking_uri="http://mlflow:5000",
+    experiment_name="sales_forecasting"
+))
+mlflow.log_pipeline_run(
+    pipeline_name="daily_etl",
+    config={"source": "postgres"},
+    metrics={"rows_processed": 10000}
 )
 ```
+
+## REST API
+
+Start the API server:
+
+```bash
+uvicorn automic_etl.api:app --host 0.0.0.0 --port 8000
+```
+
+### API Endpoints
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/api/v1/health` | GET | Health check and metrics |
+| `/api/v1/pipelines` | GET, POST | List and create pipelines |
+| `/api/v1/pipelines/{id}` | GET, PUT, DELETE | Manage pipeline |
+| `/api/v1/pipelines/{id}/run` | POST | Execute pipeline |
+| `/api/v1/tables` | GET, POST | List and create tables |
+| `/api/v1/tables/{id}/data` | POST | Query table data |
+| `/api/v1/queries/execute` | POST | Execute SQL or NL query |
+| `/api/v1/connectors` | GET, POST | Manage connectors |
+| `/api/v1/connectors/{id}/test` | POST | Test connection |
+| `/api/v1/lineage/graph` | GET | Get lineage graph |
+| `/api/v1/lineage/impact/{table}` | GET | Impact analysis |
+| `/api/v1/jobs` | GET, POST | Manage scheduled jobs |
+
+### Example: Execute Query via API
+
+```bash
+curl -X POST http://localhost:8000/api/v1/queries/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Show me top 10 customers by revenue",
+    "query_type": "natural_language"
+  }'
+```
+
+## Web UI
+
+Launch the Streamlit dashboard:
+
+```bash
+streamlit run -m automic_etl.ui.app
+```
+
+Features:
+- Home dashboard with medallion architecture overview
+- Data ingestion wizard (files, databases, APIs, streaming)
+- Pipeline builder with visual stage management
+- Query Studio with natural language support
+- Data profiling and quality metrics
+- Data lineage visualization
+- Monitoring dashboard
+- Settings and connector management
 
 ## CLI Usage
 
@@ -232,53 +321,113 @@ llm:
   model: "claude-sonnet-4-20250514"
   api_key: "${ANTHROPIC_API_KEY}"
 
-extraction:
-  default_mode: "incremental"
-  batch:
-    size: 100000
-```
+# Integrations
+integrations:
+  spark:
+    master: "spark://localhost:7077"
+    enable_delta: true
 
-## Environment Variables
+  airflow:
+    base_url: "http://airflow:8080"
+    username: "admin"
 
-```bash
-# LLM
-export ANTHROPIC_API_KEY=your_key
-
-# AWS
-export AWS_ACCESS_KEY_ID=your_key
-export AWS_SECRET_ACCESS_KEY=your_secret
-export AWS_REGION=us-east-1
-
-# GCP
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json
-
-# Azure
-export AZURE_STORAGE_CONNECTION_STRING=your_connection_string
+  mlflow:
+    tracking_uri: "http://mlflow:5000"
 ```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Automic ETL Tool                         │
-├─────────────────────────────────────────────────────────────┤
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐ │
-│  │  Ingest   │  │  Process  │  │  Storage  │  │    LLM    │ │
-│  │  Layer    │──│  Layer    │──│  Layer    │──│  Engine   │ │
-│  └───────────┘  └───────────┘  └───────────┘  └───────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│                  Medallion Architecture                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │   BRONZE    │  │   SILVER    │  │    GOLD     │         │
-│  │  (Raw Data) │──│  (Cleaned)  │──│ (Analytics) │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-├─────────────────────────────────────────────────────────────┤
-│                   Apache Iceberg Tables                      │
-├─────────────────────────────────────────────────────────────┤
-│  ┌───────────┐  ┌───────────┐  ┌─────────────────┐         │
-│  │  AWS S3   │  │   GCS     │  │  Azure Blob     │         │
-│  └───────────┘  └───────────┘  └─────────────────┘         │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          Automic ETL Platform                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │   Web UI    │  │  REST API   │  │     CLI     │  │   Python    │    │
+│  │ (Streamlit) │  │  (FastAPI)  │  │   (Typer)   │  │     SDK     │    │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘    │
+├─────────┴────────────────┴────────────────┴────────────────┴───────────┤
+│                           Core Engine                                   │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐           │
+│  │  Pipeline │  │  Lineage  │  │ Scheduler │  │    LLM    │           │
+│  │  Manager  │  │  Tracker  │  │           │  │  Engine   │           │
+│  └───────────┘  └───────────┘  └───────────┘  └───────────┘           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                       Medallion Architecture                            │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐        │
+│  │     BRONZE      │  │     SILVER      │  │      GOLD       │        │
+│  │   (Raw Data)    │──│   (Cleaned)     │──│  (Aggregated)   │        │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                          Data Connectors                                │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐          │
+│  │Databases│ │  APIs   │ │Streaming│ │  Files  │ │  Cloud  │          │
+│  │ PG/MySQL│ │SF/HubSp│ │Kafka/Kin│ │CSV/JSON │ │ S3/GCS  │          │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                      Open Source Integrations                           │
+│  ┌───────┐  ┌─────┐  ┌────┐  ┌─────────┐  ┌──────┐  ┌────────────┐    │
+│  │ Spark │  │ dbt │  │ GE │  │ Airflow │  │MLflow│  │OpenMetadata│    │
+│  └───────┘  └─────┘  └────┘  └─────────┘  └──────┘  └────────────┘    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                    Storage (Delta Lake / Iceberg)                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐          │
+│  │    AWS S3     │  │      GCS      │  │   Azure Blob      │          │
+│  └───────────────┘  └───────────────┘  └───────────────────┘          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## Technology Stack
+
+| Category | Technologies |
+|----------|-------------|
+| **Language** | Python 3.10+ |
+| **Data Processing** | Polars, PyArrow, PySpark |
+| **Table Formats** | Delta Lake, Apache Iceberg |
+| **Cloud SDKs** | boto3, google-cloud-storage, azure-storage-blob |
+| **LLM Providers** | Anthropic, OpenAI, LiteLLM |
+| **Streaming** | confluent-kafka, boto3 (Kinesis), google-cloud-pubsub |
+| **Web UI** | Streamlit |
+| **REST API** | FastAPI, Pydantic |
+| **CLI** | Typer, Rich |
+| **Auth** | JWT, OAuth2, RBAC |
+
+## Project Structure
+
+```
+automic-etl/
+├── src/automic_etl/
+│   ├── api/                 # REST API (FastAPI)
+│   │   ├── routes/          # API endpoints
+│   │   └── models.py        # Pydantic schemas
+│   ├── auth/                # Authentication & RBAC
+│   ├── connectors/          # Data source connectors
+│   │   ├── databases/       # Database connectors
+│   │   ├── apis/            # API connectors
+│   │   └── streaming/       # Kafka, Kinesis, Pub/Sub
+│   ├── core/                # Core pipeline engine
+│   ├── extraction/          # Batch/incremental extraction
+│   ├── integrations/        # Open source integrations
+│   │   ├── spark.py         # Apache Spark
+│   │   ├── dbt.py           # dbt
+│   │   ├── airflow.py       # Apache Airflow
+│   │   ├── mlflow.py        # MLflow
+│   │   ├── great_expectations.py
+│   │   └── openmetadata.py
+│   ├── lineage/             # Data lineage tracking
+│   ├── llm/                 # LLM integration
+│   ├── medallion/           # Bronze/Silver/Gold layers
+│   ├── notifications/       # Alerts (Email, Slack, etc.)
+│   ├── orchestration/       # Job scheduling
+│   ├── storage/             # Cloud storage & table formats
+│   ├── ui/                  # Streamlit Web UI
+│   │   ├── pages/           # UI pages
+│   │   ├── components.py    # Reusable components
+│   │   └── theme.py         # Theming system
+│   └── validation/          # Data quality validation
+├── config/                  # Configuration files
+├── examples/                # Usage examples
+└── tests/                   # Test suite
 ```
 
 ## Examples
@@ -286,19 +435,11 @@ export AZURE_STORAGE_CONNECTION_STRING=your_connection_string
 See the `examples/` directory for complete examples:
 
 - `basic_pipeline.py` - Simple ETL pipeline
-- `unstructured_pipeline.py` - Processing PDFs and documents
+- `streaming_pipeline.py` - Kafka/Kinesis streaming
+- `spark_pipeline.py` - Distributed processing with Spark
+- `dbt_pipeline.py` - SQL transformations with dbt
 - `llm_augmented_pipeline.py` - LLM-powered data processing
 - `scd2_pipeline.py` - SCD Type 2 dimension tracking
-
-## Technology Stack
-
-- **Python**: 3.10+
-- **Data Processing**: Polars, PyArrow
-- **Iceberg**: PyIceberg
-- **Cloud SDKs**: boto3, google-cloud-storage, azure-storage-blob
-- **LLM**: Anthropic, OpenAI, LiteLLM
-- **Unstructured**: unstructured, pypdf
-- **CLI**: Typer, Rich
 
 ## License
 
@@ -310,5 +451,5 @@ Contributions welcome! Please read our contributing guidelines.
 
 ## Support
 
-- GitHub Issues: [Report bugs or request features](https://github.com/datantllc/automic-etl/issues)
-- Documentation: [Full docs](https://github.com/datantllc/automic-etl#readme)
+- GitHub Issues: [Report bugs or request features](https://github.com/pachecocarlos27/automic-etl/issues)
+- Documentation: [Full docs](https://github.com/pachecocarlos27/automic-etl#readme)
