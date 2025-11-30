@@ -142,35 +142,43 @@ def pipeline_status_widget(
         title: Widget title
         show_details: Whether to show detailed info
     """
-    st.markdown(f"### {title}")
+    st.markdown(f"""
+    <div class="section-header">
+        <h3 class="section-title">{title}</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
     if not pipelines:
-        st.info("No pipelines configured")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-state-icon">📦</div>
+            <div class="empty-state-title">No pipelines configured</div>
+            <div class="empty-state-desc">Create your first pipeline to get started</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
-    # Count by status
     status_counts = {}
     for p in pipelines:
         status = p.get("status", "unknown")
         status_counts[status] = status_counts.get(status, 0) + 1
 
-    # Display status summary
     cols = st.columns(4)
     status_config = [
-        ("running", "🟢", "Running"),
-        ("completed", "✅", "Completed"),
-        ("failed", "🔴", "Failed"),
-        ("pending", "🟡", "Pending"),
+        ("running", "🟢", "Running", "badge-success"),
+        ("completed", "✅", "Completed", "badge-primary"),
+        ("failed", "🔴", "Failed", "badge-danger"),
+        ("pending", "🟡", "Pending", "badge-warning"),
     ]
 
-    for i, (status, icon, label) in enumerate(status_config):
+    for i, (status, icon, label, badge_class) in enumerate(status_config):
         with cols[i]:
             count = status_counts.get(status, 0)
             st.markdown(f"""
-            <div style="text-align: center; padding: 0.5rem;">
+            <div class="stats-card" style="text-align: center;">
                 <div style="font-size: 1.5rem;">{icon}</div>
-                <div style="font-size: 1.5rem; font-weight: bold;">{count}</div>
-                <div style="font-size: 0.75rem; color: var(--text-secondary);">{label}</div>
+                <div class="stats-value">{count}</div>
+                <span class="badge {badge_class}">{label}</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -288,37 +296,45 @@ def data_quality_score_widget(
         title: Widget title
         breakdown: Optional score breakdown by category
     """
-    st.markdown(f"### {title}")
+    st.markdown(f"""
+    <div class="section-header">
+        <h3 class="section-title">{title}</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Determine color based on score
     if score >= 90:
         color = "var(--success)"
         label = "Excellent"
+        badge_class = "badge-success"
     elif score >= 70:
-        color = "var(--warning)"
+        color = "var(--primary)"
         label = "Good"
+        badge_class = "badge-primary"
     elif score >= 50:
         color = "var(--warning)"
         label = "Fair"
+        badge_class = "badge-warning"
     else:
         color = "var(--danger)"
         label = "Poor"
+        badge_class = "badge-danger"
 
     st.markdown(f"""
-    <div style="text-align: center; padding: 1rem;">
+    <div class="card-elevated" style="text-align: center; padding: 1.5rem;">
         <div style="
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             background: conic-gradient({color} {score * 3.6}deg, var(--surface) 0deg);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         ">
             <div style="
-                width: 100px;
-                height: 100px;
+                width: 116px;
+                height: 116px;
                 border-radius: 50%;
                 background: var(--background);
                 display: flex;
@@ -326,23 +342,29 @@ def data_quality_score_widget(
                 justify-content: center;
                 flex-direction: column;
             ">
-                <span style="font-size: 1.75rem; font-weight: bold; color: {color};">{score:.0f}</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">/ 100</span>
+                <span style="font-size: 2.25rem; font-weight: 700; color: {color}; letter-spacing: -0.02em;">{score:.0f}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">/ 100</span>
             </div>
         </div>
-        <div style="font-weight: 600; color: {color};">{label}</div>
+        <span class="badge {badge_class}" style="font-size: 0.8125rem; padding: 0.375rem 1rem;">{label}</span>
     </div>
     """, unsafe_allow_html=True)
 
     if breakdown:
-        st.markdown("---")
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         for category, cat_score in breakdown.items():
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.progress(cat_score / 100)
-            with col2:
-                st.markdown(f"**{cat_score:.0f}%**")
-            st.caption(category)
+            cat_color = "var(--success)" if cat_score >= 85 else "var(--warning)" if cat_score >= 70 else "var(--danger)"
+            st.markdown(f"""
+            <div style="margin-bottom: 0.875rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.375rem;">
+                    <span style="font-size: 0.8125rem; color: var(--text-secondary);">{category}</span>
+                    <span style="font-size: 0.8125rem; font-weight: 600; color: {cat_color};">{cat_score:.0f}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {cat_score}%; background: {cat_color};"></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 
 def data_freshness_widget(
@@ -434,49 +456,71 @@ def activity_feed_widget(
         title: Widget title
         max_items: Maximum items to show
     """
-    st.markdown(f"### {title}")
+    st.markdown(f"""
+    <div class="section-header">
+        <h3 class="section-title">{title}</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
     if not activities:
-        st.info("No recent activity")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-title">No recent activity</div>
+            <div class="empty-state-desc">Activity will appear here as you use the platform</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
-    for activity in activities[:max_items]:
+    action_config = {
+        "create": ("➕", "badge-success"),
+        "update": ("✏️", "badge-primary"),
+        "delete": ("🗑️", "badge-danger"),
+        "run": ("▶️", "badge-primary"),
+        "complete": ("✅", "badge-success"),
+        "fail": ("❌", "badge-danger"),
+        "login": ("🔐", "badge-neutral"),
+        "logout": ("🚪", "badge-neutral"),
+    }
+
+    st.markdown('<div class="card-elevated" style="padding: 0;">', unsafe_allow_html=True)
+    
+    for i, activity in enumerate(activities[:max_items]):
         action = activity.get("action", "unknown")
         user = activity.get("user", "System")
         timestamp = activity.get("timestamp", "")
         details = activity.get("details", "")
 
-        action_icons = {
-            "create": "➕",
-            "update": "✏️",
-            "delete": "🗑️",
-            "run": "▶️",
-            "complete": "✅",
-            "fail": "❌",
-            "login": "🔐",
-            "logout": "🚪",
-        }
-        icon = action_icons.get(action, "📝")
+        icon, badge_class = action_config.get(action, ("📝", "badge-neutral"))
 
         if isinstance(timestamp, datetime):
             timestamp = timestamp.strftime("%H:%M")
 
+        border_style = "" if i == len(activities[:max_items]) - 1 else "border-bottom: 1px solid var(--border-light);"
+
         st.markdown(f"""
         <div style="
             display: flex;
-            gap: 0.75rem;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border-light);
-        ">
-            <span style="font-size: 1.25rem;">{icon}</span>
-            <div style="flex: 1;">
-                <div style="font-weight: 500;">{details or action.title()}</div>
-                <div style="font-size: 0.75rem; color: var(--text-secondary);">
-                    by {user} • {timestamp}
+            align-items: center;
+            gap: 0.875rem;
+            padding: 1rem 1.25rem;
+            {border_style}
+            transition: background 0.15s ease;
+        " class="activity-item">
+            <div class="icon-container icon-sm" style="background: var(--surface);">
+                <span style="font-size: 1rem;">{icon}</span>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 500; color: var(--text-primary); font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{details or action.title()}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.125rem;">
+                    by <span style="font-weight: 500;">{user}</span> • {timestamp}
                 </div>
             </div>
+            <span class="badge {badge_class}">{action}</span>
         </div>
         """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def user_activity_chart(

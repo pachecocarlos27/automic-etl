@@ -715,5 +715,634 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }}
+
+    /* Enhanced Button Styles */
+    .btn {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-lg);
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        text-decoration: none;
+    }}
+
+    .btn-primary {{
+        background: linear-gradient(135deg, var(--primary) 0%, #0052CC 100%);
+        color: white;
+        box-shadow: 0 4px 14px 0 rgba(0, 102, 255, 0.25);
+    }}
+
+    .btn-primary:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px 0 rgba(0, 102, 255, 0.35);
+    }}
+
+    .btn-secondary {{
+        background: var(--surface);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }}
+
+    .btn-secondary:hover {{
+        background: var(--surface-hover);
+        border-color: var(--primary);
+        color: var(--primary);
+    }}
+
+    .btn-outline {{
+        background: transparent;
+        color: var(--primary);
+        border: 2px solid var(--primary);
+    }}
+
+    .btn-outline:hover {{
+        background: var(--primary);
+        color: white;
+    }}
+
+    .btn-ghost {{
+        background: transparent;
+        color: var(--text-secondary);
+    }}
+
+    .btn-ghost:hover {{
+        background: var(--surface);
+        color: var(--text-primary);
+    }}
+
+    .btn-sm {{
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+    }}
+
+    .btn-lg {{
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }}
+
+    .btn-icon {{
+        padding: 0.625rem;
+        border-radius: var(--radius-lg);
+    }}
+
+    /* Enhanced Card Styles */
+    .card-elevated {{
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }}
+
+    .card-elevated:hover {{
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }}
+
+    .card-interactive {{
+        cursor: pointer;
+    }}
+
+    .card-interactive:hover {{
+        border-color: var(--primary);
+    }}
+
+    .card-gradient {{
+        position: relative;
+        overflow: hidden;
+    }}
+
+    .card-gradient::before {{
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+    }}
+
+    /* Data Table Enhancements */
+    .table-modern {{
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+    }}
+
+    .table-modern th {{
+        background: var(--surface);
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 2px solid var(--border);
+    }}
+
+    .table-modern td {{
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-primary);
+    }}
+
+    .table-modern tr:hover {{
+        background: var(--surface);
+    }}
+
+    .table-modern tr:nth-child(even) {{
+        background: rgba(248, 250, 252, 0.5);
+    }}
+
+    /* Form Input Enhancements */
+    .input-group {{
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }}
+
+    .input-label {{
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }}
+
+    .input-hint {{
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }}
+
+    .input-error {{
+        font-size: 0.75rem;
+        color: var(--danger);
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }}
+
+    .input-field {{
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+        background: var(--background);
+        color: var(--text-primary);
+    }}
+
+    .input-field:focus {{
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+    }}
+
+    .input-field.error {{
+        border-color: var(--danger);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }}
+
+    .input-field.success {{
+        border-color: var(--success);
+    }}
+
+    /* Alert/Notification Styles */
+    .alert {{
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius-lg);
+        font-size: 0.875rem;
+    }}
+
+    .alert-success {{
+        background: var(--success-light);
+        color: #065F46;
+        border-left: 4px solid var(--success);
+    }}
+
+    .alert-warning {{
+        background: var(--warning-light);
+        color: #92400E;
+        border-left: 4px solid var(--warning);
+    }}
+
+    .alert-error {{
+        background: var(--danger-light);
+        color: #991B1B;
+        border-left: 4px solid var(--danger);
+    }}
+
+    .alert-info {{
+        background: var(--info-light);
+        color: #1E40AF;
+        border-left: 4px solid var(--info);
+    }}
+
+    /* Toast Notifications */
+    .toast {{
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-lg);
+        background: var(--text-primary);
+        color: white;
+        box-shadow: var(--shadow-xl);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideInRight 0.3s ease-out;
+        z-index: 9999;
+    }}
+
+    @keyframes slideInRight {{
+        from {{ opacity: 0; transform: translateX(100%); }}
+        to {{ opacity: 1; transform: translateX(0); }}
+    }}
+
+    /* Loading States */
+    .skeleton {{
+        background: linear-gradient(90deg, var(--surface) 0%, var(--surface-hover) 50%, var(--surface) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: var(--radius-md);
+    }}
+
+    .skeleton-text {{
+        height: 1rem;
+        margin-bottom: 0.5rem;
+    }}
+
+    .skeleton-title {{
+        height: 1.5rem;
+        width: 60%;
+        margin-bottom: 1rem;
+    }}
+
+    .skeleton-card {{
+        height: 120px;
+        border-radius: var(--radius-xl);
+    }}
+
+    .spinner {{
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }}
+
+    @keyframes spin {{
+        to {{ transform: rotate(360deg); }}
+    }}
+
+    /* Progress Indicators */
+    .progress-bar {{
+        height: 8px;
+        background: var(--surface);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+    }}
+
+    .progress-fill {{
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: var(--radius-full);
+        transition: width 0.3s ease;
+    }}
+
+    /* Badge Styles */
+    .badge {{
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: var(--radius-full);
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }}
+
+    .badge-primary {{
+        background: var(--primary-light);
+        color: var(--primary);
+    }}
+
+    .badge-success {{
+        background: var(--success-light);
+        color: var(--success);
+    }}
+
+    .badge-warning {{
+        background: var(--warning-light);
+        color: #B45309;
+    }}
+
+    .badge-danger {{
+        background: var(--danger-light);
+        color: var(--danger);
+    }}
+
+    .badge-neutral {{
+        background: var(--surface);
+        color: var(--text-secondary);
+    }}
+
+    /* Tooltip Styles */
+    .tooltip {{
+        position: relative;
+    }}
+
+    .tooltip::after {{
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        padding: 0.5rem 0.75rem;
+        background: var(--text-primary);
+        color: white;
+        font-size: 0.75rem;
+        border-radius: var(--radius-md);
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+        z-index: 100;
+    }}
+
+    .tooltip:hover::after {{
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(-4px);
+    }}
+
+    /* Divider Styles */
+    .divider {{
+        height: 1px;
+        background: var(--border);
+        margin: 1.5rem 0;
+    }}
+
+    .divider-vertical {{
+        width: 1px;
+        height: 100%;
+        background: var(--border);
+        margin: 0 1rem;
+    }}
+
+    /* Avatar Styles */
+    .avatar {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-full);
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: white;
+        font-weight: 600;
+    }}
+
+    .avatar-sm {{
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }}
+
+    .avatar-md {{
+        width: 40px;
+        height: 40px;
+        font-size: 0.875rem;
+    }}
+
+    .avatar-lg {{
+        width: 56px;
+        height: 56px;
+        font-size: 1.25rem;
+    }}
+
+    /* Stats Card */
+    .stats-card {{
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        transition: all 0.2s ease;
+    }}
+
+    .stats-card:hover {{
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }}
+
+    .stats-label {{
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }}
+
+    .stats-value {{
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+        line-height: 1;
+    }}
+
+    .stats-change {{
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }}
+
+    .stats-change.positive {{
+        color: var(--success);
+    }}
+
+    .stats-change.negative {{
+        color: var(--danger);
+    }}
+
+    /* Icon Container */
+    .icon-container {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-lg);
+        flex-shrink: 0;
+    }}
+
+    .icon-sm {{
+        width: 32px;
+        height: 32px;
+    }}
+
+    .icon-md {{
+        width: 40px;
+        height: 40px;
+    }}
+
+    .icon-lg {{
+        width: 48px;
+        height: 48px;
+    }}
+
+    /* Quick Action Card */
+    .quick-action {{
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }}
+
+    .quick-action:hover {{
+        background: var(--surface);
+        border-color: var(--primary);
+        transform: translateX(4px);
+    }}
+
+    .quick-action-icon {{
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }}
+
+    .quick-action-content {{
+        flex: 1;
+    }}
+
+    .quick-action-title {{
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9375rem;
+    }}
+
+    .quick-action-desc {{
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+    }}
+
+    /* Empty State */
+    .empty-state {{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        text-align: center;
+        color: var(--text-muted);
+    }}
+
+    .empty-state-icon {{
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }}
+
+    .empty-state-title {{
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }}
+
+    .empty-state-desc {{
+        font-size: 0.875rem;
+        max-width: 300px;
+    }}
+
+    /* Section Header */
+    .section-header {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }}
+
+    .section-title {{
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }}
+
+    .section-subtitle {{
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }}
+
+    /* Page Header */
+    .page-header {{
+        margin-bottom: 2rem;
+    }}
+
+    .page-title {{
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+    }}
+
+    .page-description {{
+        font-size: 1rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+    }}
+
+    /* Breadcrumb */
+    .breadcrumb {{
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }}
+
+    .breadcrumb-item {{
+        color: var(--text-muted);
+        text-decoration: none;
+    }}
+
+    .breadcrumb-item:hover {{
+        color: var(--primary);
+    }}
+
+    .breadcrumb-item.active {{
+        color: var(--text-primary);
+        font-weight: 500;
+    }}
+
+    .breadcrumb-separator {{
+        color: var(--border);
+    }}
     </style>
     """
