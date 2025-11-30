@@ -1,4 +1,4 @@
-"""Theme system for Automic ETL UI."""
+"""Theme system for Automic ETL UI - Professional Data Platform Design."""
 
 from __future__ import annotations
 
@@ -16,94 +16,92 @@ class ThemeMode(str, Enum):
 
 @dataclass
 class ColorPalette:
-    """Color palette for a theme."""
-    # Primary colors
-    primary: str = "#1f77b4"
-    primary_hover: str = "#1a5f8f"
-    primary_light: str = "#4fa3d6"
+    """Color palette for a theme - Modern Professional Design."""
+    primary: str = "#0066FF"
+    primary_hover: str = "#0052CC"
+    primary_light: str = "#E6F0FF"
 
-    # Secondary colors
-    secondary: str = "#6c757d"
-    secondary_hover: str = "#5a6268"
+    secondary: str = "#6B7280"
+    secondary_hover: str = "#4B5563"
 
-    # Accent colors
-    accent: str = "#17a2b8"
-    accent_hover: str = "#138496"
+    accent: str = "#00D4AA"
+    accent_hover: str = "#00B894"
 
-    # Status colors
-    success: str = "#28a745"
-    success_light: str = "#d4edda"
-    warning: str = "#ffc107"
-    warning_light: str = "#fff3cd"
-    danger: str = "#dc3545"
-    danger_light: str = "#f8d7da"
-    info: str = "#17a2b8"
-    info_light: str = "#d1ecf1"
+    success: str = "#10B981"
+    success_light: str = "#D1FAE5"
+    warning: str = "#F59E0B"
+    warning_light: str = "#FEF3C7"
+    danger: str = "#EF4444"
+    danger_light: str = "#FEE2E2"
+    info: str = "#3B82F6"
+    info_light: str = "#DBEAFE"
 
-    # Neutral colors
-    background: str = "#ffffff"
-    surface: str = "#f8f9fa"
-    surface_hover: str = "#e9ecef"
-    border: str = "#dee2e6"
-    border_light: str = "#e9ecef"
+    background: str = "#FFFFFF"
+    surface: str = "#F8FAFC"
+    surface_hover: str = "#F1F5F9"
+    border: str = "#E2E8F0"
+    border_light: str = "#F1F5F9"
 
-    # Text colors
-    text_primary: str = "#212529"
-    text_secondary: str = "#6c757d"
-    text_muted: str = "#adb5bd"
-    text_inverse: str = "#ffffff"
+    text_primary: str = "#0F172A"
+    text_secondary: str = "#64748B"
+    text_muted: str = "#94A3B8"
+    text_inverse: str = "#FFFFFF"
 
-    # Data tier colors (lakehouse specific)
-    bronze: str = "#cd7f32"
-    silver: str = "#c0c0c0"
-    gold: str = "#ffd700"
+    bronze: str = "#B45309"
+    silver: str = "#6B7280"
+    gold: str = "#D97706"
+
+    gradient_start: str = "#0066FF"
+    gradient_end: str = "#00D4AA"
 
 
 @dataclass
 class DarkColorPalette(ColorPalette):
-    """Dark theme color palette."""
-    # Override for dark mode
-    background: str = "#1a1a2e"
-    surface: str = "#16213e"
-    surface_hover: str = "#0f3460"
-    border: str = "#2d3748"
-    border_light: str = "#4a5568"
+    """Dark theme color palette - Professional Dark Mode."""
+    primary: str = "#3B82F6"
+    primary_hover: str = "#2563EB"
+    primary_light: str = "#1E3A5F"
 
-    text_primary: str = "#f7fafc"
-    text_secondary: str = "#a0aec0"
-    text_muted: str = "#718096"
+    background: str = "#0F172A"
+    surface: str = "#1E293B"
+    surface_hover: str = "#334155"
+    border: str = "#334155"
+    border_light: str = "#475569"
 
-    # Adjusted status colors for dark mode
-    success_light: str = "#1e4620"
-    warning_light: str = "#4a3f00"
-    danger_light: str = "#4a1a1a"
-    info_light: str = "#1a3a4a"
+    text_primary: str = "#F8FAFC"
+    text_secondary: str = "#94A3B8"
+    text_muted: str = "#64748B"
+
+    success_light: str = "#064E3B"
+    warning_light: str = "#78350F"
+    danger_light: str = "#7F1D1D"
+    info_light: str = "#1E3A8A"
+
+    gradient_start: str = "#3B82F6"
+    gradient_end: str = "#06B6D4"
 
 
 @dataclass
 class Typography:
-    """Typography settings."""
-    font_family: str = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-    font_family_mono: str = "'JetBrains Mono', 'Fira Code', 'Consolas', monospace"
+    """Typography settings - Clean Modern Fonts."""
+    font_family: str = "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
+    font_family_mono: str = "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace"
 
-    # Font sizes
     font_size_xs: str = "0.75rem"
     font_size_sm: str = "0.875rem"
     font_size_base: str = "1rem"
     font_size_lg: str = "1.125rem"
     font_size_xl: str = "1.25rem"
     font_size_2xl: str = "1.5rem"
-    font_size_3xl: str = "1.875rem"
-    font_size_4xl: str = "2.25rem"
+    font_size_3xl: str = "2rem"
+    font_size_4xl: str = "2.5rem"
 
-    # Font weights
     font_weight_light: int = 300
     font_weight_normal: int = 400
     font_weight_medium: int = 500
     font_weight_semibold: int = 600
     font_weight_bold: int = 700
 
-    # Line heights
     line_height_tight: float = 1.25
     line_height_normal: float = 1.5
     line_height_relaxed: float = 1.75
@@ -122,21 +120,23 @@ class Spacing:
 
 @dataclass
 class Shadows:
-    """Shadow definitions."""
-    sm: str = "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
-    md: str = "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
-    lg: str = "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+    """Shadow definitions - Subtle Professional Shadows."""
+    sm: str = "0 1px 2px 0 rgba(0, 0, 0, 0.03)"
+    md: str = "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)"
+    lg: str = "0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)"
     xl: str = "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+    glow: str = "0 0 20px rgba(0, 102, 255, 0.15)"
 
 
 @dataclass
 class BorderRadius:
     """Border radius scale."""
     none: str = "0"
-    sm: str = "0.25rem"
-    md: str = "0.375rem"
-    lg: str = "0.5rem"
-    xl: str = "0.75rem"
+    sm: str = "0.375rem"
+    md: str = "0.5rem"
+    lg: str = "0.75rem"
+    xl: str = "1rem"
+    xxl: str = "1.5rem"
     full: str = "9999px"
 
 
@@ -155,20 +155,16 @@ class Theme:
         """Generate CSS custom properties from theme."""
         return f"""
         :root {{
-            /* Primary colors */
             --primary: {self.colors.primary};
             --primary-hover: {self.colors.primary_hover};
             --primary-light: {self.colors.primary_light};
 
-            /* Secondary colors */
             --secondary: {self.colors.secondary};
             --secondary-hover: {self.colors.secondary_hover};
 
-            /* Accent colors */
             --accent: {self.colors.accent};
             --accent-hover: {self.colors.accent_hover};
 
-            /* Status colors */
             --success: {self.colors.success};
             --success-light: {self.colors.success_light};
             --warning: {self.colors.warning};
@@ -178,29 +174,27 @@ class Theme:
             --info: {self.colors.info};
             --info-light: {self.colors.info_light};
 
-            /* Neutral colors */
             --background: {self.colors.background};
             --surface: {self.colors.surface};
             --surface-hover: {self.colors.surface_hover};
             --border: {self.colors.border};
             --border-light: {self.colors.border_light};
 
-            /* Text colors */
             --text-primary: {self.colors.text_primary};
             --text-secondary: {self.colors.text_secondary};
             --text-muted: {self.colors.text_muted};
             --text-inverse: {self.colors.text_inverse};
 
-            /* Data tier colors */
             --bronze: {self.colors.bronze};
             --silver: {self.colors.silver};
             --gold: {self.colors.gold};
 
-            /* Typography */
+            --gradient-start: {self.colors.gradient_start};
+            --gradient-end: {self.colors.gradient_end};
+
             --font-family: {self.typography.font_family};
             --font-family-mono: {self.typography.font_family_mono};
 
-            /* Spacing */
             --spacing-xs: {self.spacing.xs};
             --spacing-sm: {self.spacing.sm};
             --spacing-md: {self.spacing.md};
@@ -208,23 +202,22 @@ class Theme:
             --spacing-xl: {self.spacing.xl};
             --spacing-xxl: {self.spacing.xxl};
 
-            /* Shadows */
             --shadow-sm: {self.shadows.sm};
             --shadow-md: {self.shadows.md};
             --shadow-lg: {self.shadows.lg};
             --shadow-xl: {self.shadows.xl};
+            --shadow-glow: {self.shadows.glow};
 
-            /* Border radius */
             --radius-sm: {self.border_radius.sm};
             --radius-md: {self.border_radius.md};
             --radius-lg: {self.border_radius.lg};
             --radius-xl: {self.border_radius.xl};
+            --radius-xxl: {self.border_radius.xxl};
             --radius-full: {self.border_radius.full};
         }}
         """
 
 
-# Predefined themes
 LIGHT_THEME = Theme(
     name="light",
     mode=ThemeMode.LIGHT,
@@ -249,7 +242,7 @@ def get_theme(mode: ThemeMode | str = ThemeMode.LIGHT) -> Theme:
 
 
 def get_streamlit_css(theme: Theme | None = None) -> str:
-    """Generate complete Streamlit CSS with theme support."""
+    """Generate complete Streamlit CSS with professional theme support."""
     theme = theme or LIGHT_THEME
 
     css_vars = theme.get_css_variables()
@@ -258,96 +251,132 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
     <style>
     {css_vars}
 
-    /* Import fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-    /* Global styles */
     .stApp {{
         font-family: var(--font-family);
-        background-color: var(--background);
+        background: var(--background);
     }}
 
-    /* Headers */
     h1, h2, h3, h4, h5, h6 {{
         font-family: var(--font-family);
         color: var(--text-primary);
         font-weight: 600;
+        letter-spacing: -0.02em;
     }}
 
-    /* Sidebar */
+    h1 {{
+        font-size: {theme.typography.font_size_3xl};
+        font-weight: 700;
+    }}
+
+    h2 {{
+        font-size: {theme.typography.font_size_2xl};
+    }}
+
+    h3 {{
+        font-size: {theme.typography.font_size_xl};
+    }}
+
     [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, var(--surface) 0%, var(--background) 100%);
-        border-right: 1px solid var(--border-light);
+        background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+        border-right: none;
     }}
 
-    [data-testid="stSidebar"] .stMarkdown {{
-        color: var(--text-primary);
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] .stRadio label {{
+        color: #F1F5F9 !important;
     }}
 
-    /* Main content area */
-    .main .block-container {{
-        padding: var(--spacing-lg) var(--spacing-xl);
-        max-width: 1200px;
+    [data-testid="stSidebar"] .stRadio > div {{
+        gap: 0.25rem;
     }}
 
-    /* Cards */
-    .stCard, [data-testid="stMetricValue"] {{
-        background: var(--surface);
-        border: 1px solid var(--border-light);
+    [data-testid="stSidebar"] .stRadio > div > label {{
+        padding: 0.75rem 1rem;
         border-radius: var(--radius-lg);
-        padding: var(--spacing-md);
-        box-shadow: var(--shadow-sm);
+        transition: all 0.2s ease;
+        margin: 0;
     }}
 
-    /* Buttons - Primary */
+    [data-testid="stSidebar"] .stRadio > div > label:hover {{
+        background: rgba(255, 255, 255, 0.1);
+    }}
+
+    [data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {{
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white !important;
+    }}
+
+    [data-testid="stSidebar"] hr {{
+        border-color: rgba(255, 255, 255, 0.1);
+        margin: 1rem 0;
+    }}
+
+    [data-testid="stSidebar"] .stTextInput input {{
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: var(--radius-lg);
+    }}
+
+    [data-testid="stSidebar"] .stTextInput input::placeholder {{
+        color: rgba(255, 255, 255, 0.5);
+    }}
+
+    .main .block-container {{
+        padding: 2rem 3rem;
+        max-width: 1400px;
+    }}
+
     .stButton > button[kind="primary"],
     .stButton > button[data-testid="baseButton-primary"] {{
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, #0052CC 100%);
         color: var(--text-inverse);
         border: none;
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm) var(--spacing-md);
-        font-weight: 500;
+        border-radius: var(--radius-lg);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
         transition: all 0.2s ease;
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 2px 4px rgba(0, 102, 255, 0.2);
     }}
 
     .stButton > button[kind="primary"]:hover,
     .stButton > button[data-testid="baseButton-primary"]:hover {{
-        background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
-        box-shadow: var(--shadow-md);
         transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
     }}
 
-    /* Buttons - Secondary */
-    .stButton > button[kind="secondary"],
     .stButton > button {{
         background: var(--surface);
         color: var(--text-primary);
         border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-lg);
+        padding: 0.75rem 1.5rem;
         font-weight: 500;
+        font-size: 0.875rem;
         transition: all 0.2s ease;
     }}
 
-    .stButton > button[kind="secondary"]:hover,
     .stButton > button:hover {{
         background: var(--surface-hover);
         border-color: var(--primary);
+        color: var(--primary);
     }}
 
-    /* Input fields */
     .stTextInput > div > div > input,
     .stSelectbox > div > div > div,
     .stMultiSelect > div > div > div,
     .stTextArea textarea {{
         background: var(--background);
         border: 1px solid var(--border);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-lg);
         color: var(--text-primary);
-        padding: var(--spacing-sm);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
     }}
 
     .stTextInput > div > div > input:focus,
@@ -357,50 +386,53 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
         outline: none;
     }}
 
-    /* Metrics */
     [data-testid="stMetricLabel"] {{
         color: var(--text-secondary);
-        font-size: {theme.typography.font_size_sm};
-        font-weight: 500;
+        font-size: 0.75rem;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }}
 
     [data-testid="stMetricValue"] {{
         color: var(--text-primary);
-        font-size: {theme.typography.font_size_2xl};
+        font-size: 2rem;
         font-weight: 700;
+        letter-spacing: -0.02em;
     }}
 
     [data-testid="stMetricDelta"] {{
-        font-size: {theme.typography.font_size_sm};
-        font-weight: 500;
+        font-size: 0.875rem;
+        font-weight: 600;
     }}
 
-    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: var(--spacing-xs);
+        gap: 0;
         background: var(--surface);
-        padding: var(--spacing-xs);
-        border-radius: var(--radius-lg);
+        padding: 0.25rem;
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border);
     }}
 
     .stTabs [data-baseweb="tab"] {{
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-lg);
+        padding: 0.625rem 1.25rem;
         color: var(--text-secondary);
         font-weight: 500;
+        font-size: 0.875rem;
+        border: none;
+        background: transparent;
     }}
 
     .stTabs [aria-selected="true"] {{
-        background: var(--primary);
-        color: var(--text-inverse);
+        background: var(--background);
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
     }}
 
-    /* Tables */
     .stDataFrame {{
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
         overflow: hidden;
     }}
 
@@ -408,50 +440,39 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
         background: var(--surface);
         color: var(--text-primary);
         font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         border-bottom: 2px solid var(--border);
+        padding: 1rem;
+    }}
+
+    .stDataFrame tbody tr {{
+        transition: background 0.15s ease;
     }}
 
     .stDataFrame tbody tr:hover {{
-        background: var(--surface-hover);
+        background: var(--surface);
     }}
 
-    /* Alerts */
+    .stDataFrame tbody td {{
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+    }}
+
     .stAlert {{
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-lg);
         border: none;
-        padding: var(--spacing-md);
+        padding: 1rem 1.25rem;
     }}
 
-    .stAlert[data-baseweb="notification"] {{
-        border-left: 4px solid var(--info);
-        background: var(--info-light);
-    }}
-
-    /* Success alert */
-    [data-testid="stAlert"]:has([data-testid="stMarkdownContainer"]:contains("success")) {{
-        border-left: 4px solid var(--success);
-        background: var(--success-light);
-    }}
-
-    /* Warning alert */
-    [data-testid="stAlert"]:has([data-testid="stMarkdownContainer"]:contains("warning")) {{
-        border-left: 4px solid var(--warning);
-        background: var(--warning-light);
-    }}
-
-    /* Error alert */
-    [data-testid="stAlert"]:has([data-testid="stMarkdownContainer"]:contains("error")) {{
-        border-left: 4px solid var(--danger);
-        background: var(--danger-light);
-    }}
-
-    /* Expanders */
     .streamlit-expanderHeader {{
         background: var(--surface);
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
         color: var(--text-primary);
         font-weight: 500;
+        padding: 1rem;
     }}
 
     .streamlit-expanderHeader:hover {{
@@ -459,21 +480,25 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
         border-color: var(--primary);
     }}
 
-    /* Progress bars */
     .stProgress > div > div {{
-        background: var(--primary);
+        background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
         border-radius: var(--radius-full);
     }}
 
-    /* Status badges */
+    .stProgress > div {{
+        background: var(--surface);
+        border-radius: var(--radius-full);
+    }}
+
     .status-badge {{
         display: inline-flex;
         align-items: center;
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: 0.375rem 0.75rem;
         border-radius: var(--radius-full);
-        font-size: {theme.typography.font_size_sm};
-        font-weight: 500;
-        text-transform: capitalize;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }}
 
     .status-success {{
@@ -483,7 +508,7 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
 
     .status-warning {{
         background: var(--warning-light);
-        color: #856404;
+        color: #92400E;
     }}
 
     .status-danger {{
@@ -496,58 +521,59 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
         color: var(--info);
     }}
 
-    /* Data tier badges */
     .tier-badge {{
         display: inline-flex;
         align-items: center;
-        padding: var(--spacing-xs) var(--spacing-sm);
+        gap: 0.375rem;
+        padding: 0.375rem 0.875rem;
         border-radius: var(--radius-full);
-        font-size: {theme.typography.font_size_sm};
-        font-weight: 600;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }}
 
     .tier-bronze {{
-        background: linear-gradient(135deg, #cd7f32 0%, #8b5a2b 100%);
+        background: linear-gradient(135deg, #B45309 0%, #92400E 100%);
         color: white;
     }}
 
     .tier-silver {{
-        background: linear-gradient(135deg, #c0c0c0 0%, #a9a9a9 100%);
-        color: #333;
+        background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+        color: white;
     }}
 
     .tier-gold {{
-        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
-        color: #333;
+        background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+        color: white;
     }}
 
-    /* Code blocks */
     code {{
         font-family: var(--font-family-mono);
         background: var(--surface);
         padding: 0.2em 0.4em;
         border-radius: var(--radius-sm);
-        font-size: {theme.typography.font_size_sm};
+        font-size: 0.85em;
+        color: var(--primary);
     }}
 
     pre {{
         font-family: var(--font-family-mono);
-        background: var(--surface);
-        padding: var(--spacing-md);
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border-light);
+        background: #0F172A;
+        color: #E2E8F0;
+        padding: 1.25rem;
+        border-radius: var(--radius-lg);
+        border: none;
         overflow-x: auto;
     }}
 
-    /* Scrollbar */
     ::-webkit-scrollbar {{
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
     }}
 
     ::-webkit-scrollbar-track {{
-        background: var(--surface);
-        border-radius: var(--radius-full);
+        background: transparent;
     }}
 
     ::-webkit-scrollbar-thumb {{
@@ -559,32 +585,135 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
         background: var(--secondary);
     }}
 
-    /* Animations */
     @keyframes fadeIn {{
         from {{ opacity: 0; transform: translateY(-10px); }}
         to {{ opacity: 1; transform: translateY(0); }}
     }}
 
-    @keyframes pulse {{
-        0%, 100% {{ opacity: 1; }}
-        50% {{ opacity: 0.5; }}
+    @keyframes slideIn {{
+        from {{ opacity: 0; transform: translateX(-20px); }}
+        to {{ opacity: 1; transform: translateX(0); }}
     }}
 
-    @keyframes spin {{
-        from {{ transform: rotate(0deg); }}
-        to {{ transform: rotate(360deg); }}
+    @keyframes pulse {{
+        0%, 100% {{ opacity: 1; }}
+        50% {{ opacity: 0.6; }}
+    }}
+
+    @keyframes shimmer {{
+        0% {{ background-position: -200% 0; }}
+        100% {{ background-position: 200% 0; }}
+    }}
+
+    @keyframes gradientFlow {{
+        0% {{ background-position: 0% 50%; }}
+        50% {{ background-position: 100% 50%; }}
+        100% {{ background-position: 0% 50%; }}
     }}
 
     .animate-fade-in {{
         animation: fadeIn 0.3s ease-out;
     }}
 
+    .animate-slide-in {{
+        animation: slideIn 0.3s ease-out;
+    }}
+
     .animate-pulse {{
         animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }}
 
-    .animate-spin {{
-        animation: spin 1s linear infinite;
+    .gradient-text {{
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }}
+
+    .gradient-border {{
+        position: relative;
+        background: var(--background);
+        border-radius: var(--radius-xl);
+    }}
+
+    .gradient-border::before {{
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        border-radius: var(--radius-xl);
+        z-index: -1;
+    }}
+
+    .card {{
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        transition: all 0.2s ease;
+    }}
+
+    .card:hover {{
+        box-shadow: var(--shadow-md);
+        border-color: var(--border);
+    }}
+
+    .glass-card {{
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: var(--radius-xl);
+    }}
+
+    .metric-card {{
+        background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        padding: 1.25rem;
+        transition: all 0.2s ease;
+    }}
+
+    .metric-card:hover {{
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }}
+
+    .nav-item {{
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-lg);
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }}
+
+    .nav-item:hover {{
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }}
+
+    .nav-item.active {{
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+    }}
+
+    .logo-text {{
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+    }}
+
+    .logo-gradient {{
+        background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }}
     </style>
     """

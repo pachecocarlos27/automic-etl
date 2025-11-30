@@ -270,11 +270,31 @@ def run_app():
 def _render_sidebar_header():
     """Render the sidebar header with branding."""
     st.markdown("""
-    <div style="text-align: center; padding: 1rem 0;">
-        <h1 style="margin: 0; font-size: 1.5rem;">
-            <span style="color: var(--primary);">Automic</span> ETL
+    <div style="text-align: center; padding: 1.5rem 1rem 1rem;">
+        <div style="
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        ">
+            <span style="font-size: 1.5rem;">🔄</span>
+        </div>
+        <h1 style="
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: white;
+        ">
+            <span style="background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Automic</span>
+            <span style="color: white;"> ETL</span>
         </h1>
-        <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0;">AI-Powered Data Platform</p>
+        <p style="color: rgba(255,255,255,0.6); font-size: 0.75rem; margin: 0.25rem 0 0; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">AI-Powered Data Platform</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -345,86 +365,212 @@ def show_home_page():
 
     user = st.session_state.user
 
-    # Dashboard header
-    dashboard_header(
-        title=f"Welcome, {user.first_name or user.username}!",
-        subtitle="AI-Augmented Data Lakehouse Platform",
-        last_updated=datetime.now(),
-    )
+    st.markdown(f"""
+    <div style="margin-bottom: 2rem;">
+        <h1 style="
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin: 0 0 0.5rem;
+            color: #0F172A;
+        ">Welcome back, {user.first_name or user.username}</h1>
+        <p style="
+            font-size: 1rem;
+            color: #64748B;
+            margin: 0;
+        ">Here's what's happening with your data lakehouse today.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Key Metrics Row
-    metrics = [
-        MetricData(label="Tables", value="12", delta=2, delta_suffix=" new", icon="📊"),
-        MetricData(label="Pipelines", value="5", delta=1, delta_suffix=" running", icon="🔧"),
-        MetricData(label="Data Processed", value="2.4 GB", delta=450, delta_suffix=" MB", icon="💾"),
-        MetricData(label="LLM Queries", value="156", delta=23, delta_suffix=" today", icon="🤖"),
-    ]
-    metrics_row(metrics, columns=4)
-
-    st.markdown("---")
+    st.markdown("""
+    <div style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    ">
+        <div style="
+            background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+        ">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Tables</span>
+                <span style="font-size: 1.25rem;">📊</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">12</div>
+            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">+2 new this week</div>
+        </div>
+        <div style="
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        ">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Pipelines</span>
+                <span style="font-size: 1.25rem;">🔧</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">5</div>
+            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">1 currently running</div>
+        </div>
+        <div style="
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        ">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Data Processed</span>
+                <span style="font-size: 1.25rem;">💾</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">2.4 GB</div>
+            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">+450 MB today</div>
+        </div>
+        <div style="
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        ">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">AI Queries</span>
+                <span style="font-size: 1.25rem;">🤖</span>
+            </div>
+            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">156</div>
+            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">+23 today</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Main dashboard content
     col_left, col_right = st.columns([2, 1])
 
     with col_left:
-        # Lakehouse Overview
-        st.markdown("### Lakehouse Overview")
-        st.markdown("#### Medallion Architecture")
+        st.markdown("""
+        <div style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 600; color: #0F172A; margin: 0 0 0.25rem;">Medallion Architecture</h2>
+            <p style="font-size: 0.875rem; color: #64748B; margin: 0;">Your data flows through Bronze, Silver, and Gold layers</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        bronze_col, silver_col, gold_col = st.columns(3)
-
-        with bronze_col:
-            st.markdown("""
+        st.markdown("""
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
             <div style="
-                background: linear-gradient(135deg, #cd7f32 0%, #8b5a2b 100%);
-                color: white;
-                padding: 1rem;
-                border-radius: var(--radius-lg);
-                text-align: center;
+                background: white;
+                border: 1px solid #E2E8F0;
+                border-radius: 16px;
+                padding: 1.25rem;
+                position: relative;
+                overflow: hidden;
             ">
-                <h4 style="margin: 0;">Bronze Layer</h4>
-                <p style="margin: 0.5rem 0; font-size: 0.9rem;">Raw Data</p>
-                <hr style="border-color: rgba(255,255,255,0.3);">
-                <p style="margin: 0; font-size: 0.85rem;">8 tables • 1.2 GB</p>
-                <p style="margin: 0; font-size: 0.75rem; opacity: 0.9;">Last ingestion: 2 min ago</p>
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #B45309 0%, #D97706 100%);
+                "></div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <span style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 32px;
+                        height: 32px;
+                        background: linear-gradient(135deg, #B45309 0%, #D97706 100%);
+                        border-radius: 8px;
+                        font-size: 0.875rem;
+                    ">🥉</span>
+                    <span style="font-weight: 600; color: #0F172A;">Bronze Layer</span>
+                </div>
+                <p style="font-size: 0.75rem; color: #64748B; margin: 0 0 0.75rem;">Raw Data</p>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8;">
+                    <span>8 tables</span>
+                    <span>1.2 GB</span>
+                </div>
+                <div style="font-size: 0.7rem; color: #10B981; margin-top: 0.5rem;">Last: 2 min ago</div>
             </div>
-            """, unsafe_allow_html=True)
-
-        with silver_col:
-            st.markdown("""
             <div style="
-                background: linear-gradient(135deg, #c0c0c0 0%, #a9a9a9 100%);
-                color: #333;
-                padding: 1rem;
-                border-radius: var(--radius-lg);
-                text-align: center;
+                background: white;
+                border: 1px solid #E2E8F0;
+                border-radius: 16px;
+                padding: 1.25rem;
+                position: relative;
+                overflow: hidden;
             ">
-                <h4 style="margin: 0;">Silver Layer</h4>
-                <p style="margin: 0.5rem 0; font-size: 0.9rem;">Cleaned & Validated</p>
-                <hr style="border-color: rgba(0,0,0,0.2);">
-                <p style="margin: 0; font-size: 0.85rem;">6 tables • 890 MB</p>
-                <p style="margin: 0; font-size: 0.75rem; opacity: 0.8;">Last transform: 5 min ago</p>
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #6B7280 0%, #9CA3AF 100%);
+                "></div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <span style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 32px;
+                        height: 32px;
+                        background: linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%);
+                        border-radius: 8px;
+                        font-size: 0.875rem;
+                    ">🥈</span>
+                    <span style="font-weight: 600; color: #0F172A;">Silver Layer</span>
+                </div>
+                <p style="font-size: 0.75rem; color: #64748B; margin: 0 0 0.75rem;">Cleaned & Validated</p>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8;">
+                    <span>6 tables</span>
+                    <span>890 MB</span>
+                </div>
+                <div style="font-size: 0.7rem; color: #10B981; margin-top: 0.5rem;">Last: 5 min ago</div>
             </div>
-            """, unsafe_allow_html=True)
-
-        with gold_col:
-            st.markdown("""
             <div style="
-                background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
-                color: #333;
-                padding: 1rem;
-                border-radius: var(--radius-lg);
-                text-align: center;
+                background: white;
+                border: 1px solid #E2E8F0;
+                border-radius: 16px;
+                padding: 1.25rem;
+                position: relative;
+                overflow: hidden;
             ">
-                <h4 style="margin: 0;">Gold Layer</h4>
-                <p style="margin: 0.5rem 0; font-size: 0.9rem;">Aggregated & Enriched</p>
-                <hr style="border-color: rgba(0,0,0,0.2);">
-                <p style="margin: 0; font-size: 0.85rem;">4 tables • 320 MB</p>
-                <p style="margin: 0; font-size: 0.75rem; opacity: 0.8;">Last aggregation: 1 hr ago</p>
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, #D97706 0%, #F59E0B 100%);
+                "></div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <span style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 32px;
+                        height: 32px;
+                        background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+                        border-radius: 8px;
+                        font-size: 0.875rem;
+                    ">🥇</span>
+                    <span style="font-weight: 600; color: #0F172A;">Gold Layer</span>
+                </div>
+                <p style="font-size: 0.75rem; color: #64748B; margin: 0 0 0.75rem;">Aggregated & Enriched</p>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8;">
+                    <span>4 tables</span>
+                    <span>320 MB</span>
+                </div>
+                <div style="font-size: 0.7rem; color: #10B981; margin-top: 0.5rem;">Last: 1 hr ago</div>
             </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("---")
+        </div>
+        """, unsafe_allow_html=True)
 
         # Recent Activity
         activity_data = [
@@ -462,22 +608,23 @@ def show_home_page():
             total=5.0
         )
 
-        st.markdown("---")
+        st.markdown("""
+        <div style="margin-bottom: 1rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #0F172A; margin: 0 0 1rem;">Quick Actions</h3>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Quick Actions
-        st.markdown("### Quick Actions")
-
-        if st.button("📥 Ingest Data", use_container_width=True):
-            navigate_to("ingestion")
-
-        if st.button("🔧 Create Pipeline", use_container_width=True):
-            navigate_to("pipelines")
-
-        if st.button("💬 Query Data", use_container_width=True):
-            navigate_to("query")
-
-        if st.button("🌳 View Lineage", use_container_width=True):
-            navigate_to("lineage")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Ingest Data", use_container_width=True, type="primary"):
+                navigate_to("ingestion")
+            if st.button("💬 Query Data", use_container_width=True):
+                navigate_to("query")
+        with col2:
+            if st.button("🔧 Create Pipeline", use_container_width=True):
+                navigate_to("pipelines")
+            if st.button("🌳 View Lineage", use_container_width=True):
+                navigate_to("lineage")
 
     # System Health
     st.markdown("---")

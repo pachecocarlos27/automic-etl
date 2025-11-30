@@ -64,31 +64,76 @@ def show_login_page():
     """Display the login page."""
     st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
     .login-container {
-        max-width: 400px;
+        max-width: 420px;
         margin: 0 auto;
-        padding: 2rem;
+        padding: 2.5rem;
     }
     .login-header {
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
     }
     .login-header h1 {
-        color: #1f77b4;
-        font-size: 2.5rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
         margin-bottom: 0.5rem;
+        color: #0F172A;
     }
     .login-header p {
-        color: #666;
+        color: #64748B;
+        font-size: 0.9375rem;
     }
     .stButton > button {
         width: 100%;
-        background-color: #1f77b4;
-        color: white;
+        background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 0.875rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-size: 0.9375rem !important;
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25) !important;
+        transition: all 0.2s ease !important;
     }
-    .register-link {
-        text-align: center;
-        margin-top: 1rem;
+    .stButton > button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(0, 102, 255, 0.35) !important;
+    }
+    .stTextInput > div > div > input {
+        border-radius: 12px !important;
+        border: 1px solid #E2E8F0 !important;
+        padding: 0.875rem 1rem !important;
+        font-size: 0.9375rem !important;
+        transition: all 0.2s ease !important;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #0066FF !important;
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1) !important;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0 !important;
+        background: #F8FAFC !important;
+        padding: 0.25rem !important;
+        border-radius: 12px !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 500 !important;
+        color: #64748B !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background: white !important;
+        color: #0066FF !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    }
+    .stCheckbox {
+        padding: 0.5rem 0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -96,12 +141,33 @@ def show_login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown('<div class="login-header">', unsafe_allow_html=True)
-        st.markdown("# Automic ETL")
-        st.markdown("AI-Augmented Data Lakehouse Platform")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="text-align: center; margin-bottom: 2.5rem; padding-top: 1rem;">
+            <div style="
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 64px;
+                height: 64px;
+                background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
+                border-radius: 16px;
+                margin-bottom: 1.25rem;
+                box-shadow: 0 8px 24px rgba(0, 102, 255, 0.25);
+            ">
+                <span style="font-size: 2rem;">🔄</span>
+            </div>
+            <h1 style="
+                font-family: 'Inter', sans-serif;
+                font-size: 2rem;
+                font-weight: 700;
+                letter-spacing: -0.03em;
+                margin: 0 0 0.5rem;
+                color: #0F172A;
+            ">Automic ETL</h1>
+            <p style="color: #64748B; font-size: 0.9375rem; margin: 0;">AI-Augmented Data Lakehouse Platform</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Tab selection for login/register
         tab1, tab2 = st.tabs(["Login", "Register"])
 
         with tab1:
