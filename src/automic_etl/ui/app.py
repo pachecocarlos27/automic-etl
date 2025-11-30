@@ -186,8 +186,24 @@ def run_app():
     # Initialize app state first
     init_app_state()
 
+    # Initialize centralized state manager
+    from automic_etl.ui.state import get_state
+    state = get_state()
+    state.init_state()
+
     # Apply custom CSS with theme
     apply_custom_css()
+
+    # Inject keyboard shortcuts and notifications
+    from automic_etl.ui.shortcuts import inject_keyboard_shortcuts, add_aria_labels, render_skip_link
+    from automic_etl.ui.notifications import inject_notification_styles, render_toast_container
+    from automic_etl.ui.search import render_command_palette
+
+    inject_keyboard_shortcuts()
+    inject_notification_styles()
+    add_aria_labels()
+    render_skip_link()
+    render_command_palette()
 
     # Import auth components
     from automic_etl.ui.auth_pages import (
@@ -215,9 +231,16 @@ def run_app():
     # Authenticated user - show main app
     user = st.session_state.user
 
+    # Render toast notifications
+    render_toast_container()
+
     # Sidebar navigation
     with st.sidebar:
         _render_sidebar_header()
+
+        # Global search in sidebar
+        _render_sidebar_search()
+
         st.markdown("---")
 
         # Build navigation menu
@@ -254,6 +277,32 @@ def _render_sidebar_header():
         <p style="color: var(--text-secondary); font-size: 0.8rem; margin: 0;">AI-Powered Data Platform</p>
     </div>
     """, unsafe_allow_html=True)
+
+
+def _render_sidebar_search():
+    """Render the global search bar in sidebar."""
+    from automic_etl.ui.search import get_global_search
+
+    query = st.text_input(
+        "Search",
+        placeholder="🔍 Search... (Ctrl+K)",
+        key="sidebar_search",
+        label_visibility="collapsed",
+    )
+
+    if query and len(query) >= 2:
+        search = get_global_search()
+        results = search.search(query)
+
+        if results:
+            st.markdown("##### Quick Results")
+            for result in results[:5]:
+                if st.button(
+                    f"{result.icon} {result.title}",
+                    key=f"search_{result.title}_{result.type}",
+                    use_container_width=True,
+                ):
+                    navigate_to(result.page)
 
 
 def _route_to_page(current_page: str, admin_func: Callable, profile_func: Callable):

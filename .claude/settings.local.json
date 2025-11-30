@@ -3,7 +3,9 @@
     "allow": [
       "Bash(if not exist \"c:\\Users\\carl0\\OneDrive\\Documents\\datantLLC\\AutomicETLTool\\src\\automic_etl\\ui\\pages\" mkdir \"c:\\Users\\carl0\\OneDrive\\Documents\\datantLLC\\AutomicETLTool\\src\\automic_etl\\ui\\pages\")",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Automic ETL - AI-Augmented Data Lakehouse Platform\n\nFeatures:\n- Medallion architecture (Bronze/Silver/Gold layers) with Delta Lake\n- LLM-augmented ETL capabilities (schema inference, entity extraction, NL queries)\n- Multiple connectors: databases (PostgreSQL, MySQL, Snowflake, BigQuery, MongoDB),\n  APIs (Salesforce, HubSpot, Stripe, REST), files (CSV, JSON, Parquet), unstructured (PDF)\n- Cloud storage support: AWS S3, GCS, Azure Blob\n- SCD Type 2 slowly changing dimensions support\n- Data validation and quality framework\n- Lineage tracking and visualization\n- Job orchestration and scheduling\n- Notification system (email, Slack, webhook, PagerDuty)\n- Authentication with RBAC and superadmin support\n- Streamlit UI with theming, components, and dashboard widgets\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(gh repo create:*)"
     ],
     "deny": [],
     "ask": []
