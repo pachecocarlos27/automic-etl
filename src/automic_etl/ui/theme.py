@@ -281,48 +281,114 @@ def get_streamlit_css(theme: Theme | None = None) -> str:
     [data-testid="stSidebar"] {{
         background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
         border-right: none;
+        padding-top: 1rem;
+    }}
+
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"] {{
+        padding: 1rem 0.75rem;
+    }}
+
+    /* All sidebar text should be bright and readable */
+    [data-testid="stSidebar"] * {{
+        color: #E2E8F0 !important;
     }}
 
     [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown span,
     [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] .stRadio label {{
-        color: #F1F5F9 !important;
+    [data-testid="stSidebar"] .stRadio label,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {{
+        color: #F8FAFC !important;
+        font-weight: 500 !important;
     }}
 
+    /* Sidebar navigation labels */
     [data-testid="stSidebar"] .stRadio > div {{
-        gap: 0.25rem;
+        gap: 0.375rem;
     }}
 
     [data-testid="stSidebar"] .stRadio > div > label {{
-        padding: 0.75rem 1rem;
+        padding: 0.875rem 1rem;
         border-radius: var(--radius-lg);
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         margin: 0;
+        font-size: 0.9375rem !important;
+        font-weight: 500 !important;
+        color: #CBD5E1 !important;
+        background: transparent;
+        border: 1px solid transparent;
     }}
 
     [data-testid="stSidebar"] .stRadio > div > label:hover {{
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
+        color: #FFFFFF !important;
+        border-color: rgba(255, 255, 255, 0.1);
     }}
 
     [data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {{
-        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, #0052CC 100%);
         color: white !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        border-color: transparent;
     }}
 
+    /* Sidebar section headers */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {{
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em;
+    }}
+
+    /* Sidebar dividers */
     [data-testid="stSidebar"] hr {{
-        border-color: rgba(255, 255, 255, 0.1);
-        margin: 1rem 0;
+        border-color: rgba(255, 255, 255, 0.12);
+        margin: 1.25rem 0;
     }}
 
+    /* Sidebar caption/muted text */
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] small {{
+        color: #94A3B8 !important;
+    }}
+
+    /* Sidebar inputs */
     [data-testid="stSidebar"] .stTextInput input {{
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #FFFFFF !important;
         border-radius: var(--radius-lg);
+        transition: all 0.2s ease;
+    }}
+
+    [data-testid="stSidebar"] .stTextInput input:focus {{
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
     }}
 
     [data-testid="stSidebar"] .stTextInput input::placeholder {{
-        color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.4);
+    }}
+
+    /* Sidebar buttons */
+    [data-testid="stSidebar"] .stButton > button {{
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: #F8FAFC !important;
+    }}
+
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+    }}
+
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {{
+        background: linear-gradient(135deg, var(--primary) 0%, #0052CC 100%) !important;
+        border: none !important;
     }}
 
     .main .block-container {{

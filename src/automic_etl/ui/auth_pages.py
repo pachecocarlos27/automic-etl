@@ -61,111 +61,238 @@ def logout():
 
 
 def show_login_page():
-    """Display the login page."""
+    """Display the login page with modern professional design."""
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    .login-container {
-        max-width: 420px;
-        margin: 0 auto;
+    /* Screen-reader only: hide skip link visually but keep accessible */
+    a[href="#main-content"],
+    .stApp a[href="#main-content"],
+    a[data-testid="stSkipLink"] {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+    }
+    
+    /* Show skip link on focus for keyboard users */
+    a[href="#main-content"]:focus,
+    .stApp a[href="#main-content"]:focus,
+    a[data-testid="stSkipLink"]:focus {
+        position: fixed !important;
+        top: 1rem !important;
+        left: 1rem !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 0.75rem 1.25rem !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        clip: auto !important;
+        white-space: normal !important;
+        background: #0066FF !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+        z-index: 9999 !important;
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3) !important;
+        text-decoration: none !important;
+    }
+    
+    /* Hide sidebar on login page */
+    [data-testid="stSidebar"] {
+        display: none !important;
+    }
+    
+    /* Expand main content to full width */
+    .main .block-container {
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Login page styles */
+    .login-wrapper {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+    
+    .login-card {
+        background: white;
+        border-radius: 24px;
         padding: 2.5rem;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15),
+                    0 0 0 1px rgba(0, 0, 0, 0.05);
     }
-    .login-header {
+    
+    .login-logo {
         text-align: center;
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
     }
-    .login-header h1 {
-        font-family: 'Inter', sans-serif;
+    
+    .login-logo-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
+        border-radius: 18px;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 16px 32px -8px rgba(0, 102, 255, 0.35);
         font-size: 2rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        margin-bottom: 0.5rem;
+    }
+    
+    .login-logo h1 {
+        font-family: 'Inter', sans-serif;
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        margin: 0 0 0.375rem;
         color: #0F172A;
     }
-    .login-header p {
+    
+    .login-logo p {
         color: #64748B;
-        font-size: 0.9375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin: 0;
     }
-    .stButton > button {
-        width: 100%;
-        background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 12px !important;
-        padding: 0.875rem 1.5rem !important;
-        font-weight: 600 !important;
-        font-size: 0.9375rem !important;
-        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25) !important;
-        transition: all 0.2s ease !important;
-    }
-    .stButton > button:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 16px rgba(0, 102, 255, 0.35) !important;
-    }
-    .stTextInput > div > div > input {
-        border-radius: 12px !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 0.875rem 1rem !important;
-        font-size: 0.9375rem !important;
-        transition: all 0.2s ease !important;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #0066FF !important;
-        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1) !important;
-    }
+    
+    /* Tab styling */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0 !important;
-        background: #F8FAFC !important;
-        padding: 0.25rem !important;
-        border-radius: 12px !important;
-        border: 1px solid #E2E8F0 !important;
+        gap: 0.375rem !important;
+        background: #F1F5F9 !important;
+        padding: 0.375rem !important;
+        border-radius: 14px !important;
+        border: none !important;
+        margin-bottom: 1.5rem !important;
     }
+    
     .stTabs [data-baseweb="tab"] {
         border-radius: 10px !important;
-        padding: 0.75rem 1.5rem !important;
-        font-weight: 500 !important;
+        padding: 0.75rem 1.25rem !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
         color: #64748B !important;
+        transition: all 0.2s ease !important;
+        flex: 1 !important;
+        justify-content: center !important;
     }
+    
     .stTabs [aria-selected="true"] {
         background: white !important;
         color: #0066FF !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
     }
+    
+    .stTabs [data-baseweb="tab-highlight"],
+    .stTabs [data-baseweb="tab-border"] {
+        display: none !important;
+    }
+    
+    /* Form inputs */
+    .stTextInput label {
+        font-weight: 600 !important;
+        color: #334155 !important;
+        font-size: 0.8125rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .stTextInput > div > div > input {
+        border-radius: 10px !important;
+        border: 2px solid #E2E8F0 !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9375rem !important;
+        transition: all 0.2s ease !important;
+        background: #FAFBFC !important;
+    }
+    
+    .stTextInput > div > div > input:hover {
+        border-color: #CBD5E1 !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: #0066FF !important;
+        box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1) !important;
+        background: white !important;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        width: 100% !important;
+        background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 0.875rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-size: 0.9375rem !important;
+        box-shadow: 0 4px 14px rgba(0, 102, 255, 0.25) !important;
+        transition: all 0.2s ease !important;
+        margin-top: 0.5rem !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 20px rgba(0, 102, 255, 0.35) !important;
+    }
+    
+    /* Checkbox */
     .stCheckbox {
         padding: 0.5rem 0 !important;
+    }
+    
+    /* Alerts */
+    .stAlert {
+        border-radius: 10px !important;
+        border: none !important;
+    }
+    
+    .login-footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #E2E8F0;
+    }
+    
+    .login-footer p {
+        color: #94A3B8;
+        font-size: 0.75rem;
+        margin: 0;
+    }
+
+    /* Main container */
+    .main .block-container {
+        padding-top: 1rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 2, 1])
-
+    
     with col2:
         st.markdown("""
-        <div style="text-align: center; margin-bottom: 2.5rem; padding-top: 1rem;">
-            <div style="
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 64px;
-                height: 64px;
-                background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
-                border-radius: 16px;
-                margin-bottom: 1.25rem;
-                box-shadow: 0 8px 24px rgba(0, 102, 255, 0.25);
-            ">
-                <span style="font-size: 2rem;">🔄</span>
-            </div>
-            <h1 style="
-                font-family: 'Inter', sans-serif;
-                font-size: 2rem;
-                font-weight: 700;
-                letter-spacing: -0.03em;
-                margin: 0 0 0.5rem;
-                color: #0F172A;
-            ">Automic ETL</h1>
-            <p style="color: #64748B; font-size: 0.9375rem; margin: 0;">AI-Augmented Data Lakehouse Platform</p>
-        </div>
+        <div class="login-wrapper">
+            <div class="login-card">
+                <div class="login-logo">
+                    <div class="login-logo-icon">
+                        <span style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">⚡</span>
+                    </div>
+                    <h1>Automic ETL</h1>
+                    <p>AI-Augmented Data Lakehouse Platform</p>
+                </div>
         """, unsafe_allow_html=True)
 
         tab1, tab2 = st.tabs(["Login", "Register"])
@@ -175,6 +302,14 @@ def show_login_page():
 
         with tab2:
             show_register_form()
+        
+        st.markdown("""
+                <div class="login-footer">
+                    <p>Secure enterprise data platform</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def show_login_form():
