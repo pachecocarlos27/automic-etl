@@ -313,15 +313,15 @@ def _route_to_page(current_page: str, admin_func: Callable, profile_func: Callab
 
 
 def show_home_page():
-    """Display minimal home dashboard."""
+    """Display Material Design 3 home dashboard."""
     user = st.session_state.user
     
     st.markdown(f"""
     <div style="margin-bottom: 2.5rem;">
-        <h1 style="font-size: 1.75rem; font-weight: 700; color: #111827; margin: 0 0 0.375rem; letter-spacing: -0.025em;">
+        <h1 style="font-size: 2rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">
             Welcome back, {user.first_name or user.username}
         </h1>
-        <p style="font-size: 0.9375rem; color: #6B7280; margin: 0;">Your data lakehouse overview</p>
+        <p style="font-size: 1rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Your data lakehouse overview</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -341,16 +341,16 @@ def show_home_page():
     col_main, col_side = st.columns([2, 1])
     
     with col_main:
-        st.markdown("#### Data Layers")
+        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Data Layers</h4>""", unsafe_allow_html=True)
         
         layer_cols = st.columns(3)
         
         with layer_cols[0]:
             st.markdown("""
-            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #A16207;">
-                <div style="font-weight: 600; color: #111827; margin-bottom: 0.5rem;">Bronze</div>
-                <div style="font-size: 0.8125rem; color: #6B7280; margin-bottom: 0.75rem;">Raw data</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9CA3AF;">
+            <div style="background: #EFEBE9; border-radius: 16px; padding: 1.25rem; border-left: 4px solid #8D6E63; transition: box-shadow 0.2s ease;">
+                <div style="font-weight: 600; color: #212121; margin-bottom: 0.5rem; font-size: 1rem;">Bronze</div>
+                <div style="font-size: 0.8125rem; color: #757575; margin-bottom: 0.75rem;">Raw data</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9E9E9E;">
                     <span>8 tables</span>
                     <span>1.2 GB</span>
                 </div>
@@ -359,10 +359,10 @@ def show_home_page():
         
         with layer_cols[1]:
             st.markdown("""
-            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #64748B;">
-                <div style="font-weight: 600; color: #111827; margin-bottom: 0.5rem;">Silver</div>
-                <div style="font-size: 0.8125rem; color: #6B7280; margin-bottom: 0.75rem;">Cleaned</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9CA3AF;">
+            <div style="background: #ECEFF1; border-radius: 16px; padding: 1.25rem; border-left: 4px solid #78909C; transition: box-shadow 0.2s ease;">
+                <div style="font-weight: 600; color: #212121; margin-bottom: 0.5rem; font-size: 1rem;">Silver</div>
+                <div style="font-size: 0.8125rem; color: #757575; margin-bottom: 0.75rem;">Cleaned</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9E9E9E;">
                     <span>6 tables</span>
                     <span>890 MB</span>
                 </div>
@@ -371,10 +371,10 @@ def show_home_page():
         
         with layer_cols[2]:
             st.markdown("""
-            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #CA8A04;">
-                <div style="font-weight: 600; color: #111827; margin-bottom: 0.5rem;">Gold</div>
-                <div style="font-size: 0.8125rem; color: #6B7280; margin-bottom: 0.75rem;">Enriched</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9CA3AF;">
+            <div style="background: #FFF8E1; border-radius: 16px; padding: 1.25rem; border-left: 4px solid #FFA000; transition: box-shadow 0.2s ease;">
+                <div style="font-weight: 600; color: #212121; margin-bottom: 0.5rem; font-size: 1rem;">Gold</div>
+                <div style="font-size: 0.8125rem; color: #757575; margin-bottom: 0.75rem;">Enriched</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9E9E9E;">
                     <span>4 tables</span>
                     <span>320 MB</span>
                 </div>
@@ -383,29 +383,29 @@ def show_home_page():
         
         st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
         
-        st.markdown("#### Recent Activity")
+        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Recent Activity</h4>""", unsafe_allow_html=True)
         
         activities = [
-            ("Data ingested", "sales_data.csv", "2m ago", "#059669"),
-            ("Pipeline completed", "Bronze to Silver", "5m ago", "#2563EB"),
-            ("Query executed", "Top customers", "12m ago", "#7C3AED"),
-            ("Pipeline failed", "daily_etl", "1h ago", "#DC2626"),
+            ("Data ingested", "sales_data.csv", "2m ago", "#2E7D32", "#E8F5E9"),
+            ("Pipeline completed", "Bronze to Silver", "5m ago", "#3F51B5", "#E8EAF6"),
+            ("Query executed", "Top customers", "12m ago", "#009688", "#E0F2F1"),
+            ("Pipeline failed", "daily_etl", "1h ago", "#D32F2F", "#FFEBEE"),
         ]
         
-        for title, detail, time, color in activities:
+        for title, detail, time, color, bg in activities:
             st.markdown(f"""
-            <div style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #F3F4F6;">
-                <div style="width: 6px; height: 6px; border-radius: 50%; background: {color}; margin-right: 0.75rem;"></div>
+            <div style="display: flex; align-items: center; padding: 0.875rem 1rem; margin-bottom: 0.5rem; background: {bg}; border-radius: 12px; transition: all 0.15s ease;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: {color}; margin-right: 1rem;"></div>
                 <div style="flex: 1;">
-                    <div style="font-size: 0.875rem; color: #111827;">{title}</div>
-                    <div style="font-size: 0.75rem; color: #9CA3AF;">{detail}</div>
+                    <div style="font-size: 0.875rem; color: #212121; font-weight: 500;">{title}</div>
+                    <div style="font-size: 0.75rem; color: #757575;">{detail}</div>
                 </div>
-                <div style="font-size: 0.75rem; color: #9CA3AF;">{time}</div>
+                <div style="font-size: 0.75rem; color: #9E9E9E; font-weight: 500;">{time}</div>
             </div>
             """, unsafe_allow_html=True)
     
     with col_side:
-        st.markdown("#### Quick Actions")
+        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Quick Actions</h4>""", unsafe_allow_html=True)
         
         if st.button("Upload Data", use_container_width=True, type="primary"):
             navigate_to("ingestion")
@@ -414,11 +414,11 @@ def show_home_page():
         if st.button("Query Data", use_container_width=True):
             navigate_to("query")
         
-        st.markdown("<div style='height: 1rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
         
-        st.markdown("#### Data Quality")
+        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Data Quality</h4>""", unsafe_allow_html=True)
         st.progress(0.87)
-        st.caption("87% overall score")
+        st.markdown("""<p style="font-size: 0.8125rem; color: #757575; margin-top: 0.5rem;">87% overall score</p>""", unsafe_allow_html=True)
 
 
 def show_connectors_page():

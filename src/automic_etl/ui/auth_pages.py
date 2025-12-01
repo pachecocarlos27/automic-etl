@@ -57,7 +57,7 @@ def logout():
 
 
 def show_login_page():
-    """Display minimal login page."""
+    """Display Material Design 3 login page."""
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -83,56 +83,73 @@ def show_login_page():
         padding: 0 !important;
     }
     
+    /* Material Input styling */
     .stTextInput > div > div > input {
         border-radius: 8px !important;
-        border: 1px solid #E5E7EB !important;
-        padding: 0.75rem 1rem !important;
+        border: 1px solid #BDBDBD !important;
+        padding: 0.875rem 1rem !important;
         font-size: 0.9375rem !important;
+        background: #FFFFFF !important;
+        transition: all 0.2s ease !important;
     }
     
     .stTextInput > div > div > input:focus {
-        border-color: #2563EB !important;
-        box-shadow: 0 0 0 2px #EFF6FF !important;
+        border-color: #3F51B5 !important;
+        border-width: 2px !important;
+        box-shadow: none !important;
     }
     
+    .stTextInput > label {
+        color: #616161 !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Material Primary Button */
     .stButton > button {
         width: 100% !important;
-        background: #2563EB !important;
+        background: #3F51B5 !important;
         color: white !important;
         border: none !important;
-        border-radius: 8px !important;
-        padding: 0.75rem 1.5rem !important;
+        border-radius: 9999px !important;
+        padding: 0.875rem 1.5rem !important;
         font-weight: 600 !important;
         font-size: 0.9375rem !important;
+        letter-spacing: 0.02em !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06) !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     
     .stButton > button:hover {
-        background: #1D4ED8 !important;
+        background: #303F9F !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06) !important;
     }
     
+    /* Material Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0 !important;
-        background: #F3F4F6 !important;
+        background: #F5F5F5 !important;
         padding: 4px !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
         border: none !important;
         margin-bottom: 1.5rem !important;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 6px !important;
-        padding: 0.625rem 1rem !important;
+        border-radius: 8px !important;
+        padding: 0.75rem 1rem !important;
         font-weight: 500 !important;
         font-size: 0.875rem !important;
-        color: #6B7280 !important;
+        color: #757575 !important;
         flex: 1 !important;
         justify-content: center !important;
+        transition: all 0.2s ease !important;
     }
     
     .stTabs [aria-selected="true"] {
         background: white !important;
-        color: #111827 !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+        color: #3F51B5 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
     }
     
     .stTabs [data-baseweb="tab-highlight"],
@@ -145,15 +162,15 @@ def show_login_page():
     col1, col2, col3 = st.columns([1, 1.5, 1])
     
     with col2:
-        st.markdown("<div style='height: 10vh'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 8vh'></div>", unsafe_allow_html=True)
         
         st.markdown("""
         <div style="text-align: center; margin-bottom: 2rem;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: #2563EB; border-radius: 12px; margin-bottom: 1rem;">
-                <span style="font-size: 1.5rem;">⚡</span>
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: linear-gradient(135deg, #3F51B5, #5C6BC0); border-radius: 16px; margin-bottom: 1.25rem; box-shadow: 0 4px 12px rgba(63, 81, 181, 0.3);">
+                <span style="font-size: 1.75rem;">⚡</span>
             </div>
-            <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem; letter-spacing: -0.025em;">Automic ETL</h1>
-            <p style="font-size: 0.875rem; color: #6B7280; margin: 0;">Sign in to continue</p>
+            <h1 style="font-size: 1.75rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">Automic ETL</h1>
+            <p style="font-size: 0.9375rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Sign in to continue</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -166,8 +183,8 @@ def show_login_page():
             show_register_form()
         
         st.markdown("""
-        <div style="text-align: center; margin-top: 1.5rem;">
-            <p style="font-size: 0.75rem; color: #9CA3AF; margin: 0;">Secure enterprise data platform</p>
+        <div style="text-align: center; margin-top: 2rem;">
+            <p style="font-size: 0.8125rem; color: #9E9E9E; margin: 0; font-family: 'Inter', sans-serif;">Secure enterprise data platform</p>
         </div>
         """, unsafe_allow_html=True)
 
