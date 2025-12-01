@@ -582,6 +582,3 @@ def _show_airflow_integration():
         if st.button("Generate DAGs", type="primary"):
             st.warning("Connect to Airflow first to generate DAGs")
 
-
-# Run page when loaded by Streamlit
-show_integrations_page()

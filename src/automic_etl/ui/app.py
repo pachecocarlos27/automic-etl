@@ -195,6 +195,12 @@ def get_page_function(page_key: str) -> Callable | None:
         elif page_key == "settings":
             from automic_etl.ui.pages.settings import show_settings_page
             return show_settings_page
+        elif page_key == "company_admin":
+            from automic_etl.ui.pages.company_admin import render_company_admin_page
+            return render_company_admin_page
+        elif page_key == "superadmin":
+            from automic_etl.ui.pages.superadmin import render_superadmin_page
+            return render_superadmin_page
     except ImportError:
         pass
 

@@ -407,6 +407,3 @@ def show_alerts():
 
     st.bar_chart(history_data, x="Day")
 
-
-# Run page when loaded by Streamlit
-show_monitoring_page()

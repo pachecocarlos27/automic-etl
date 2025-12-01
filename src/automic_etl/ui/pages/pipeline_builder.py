@@ -385,6 +385,3 @@ def show_run_history():
 
             st.markdown("---")
 
-
-# Run page when loaded by Streamlit
-show_pipeline_builder_page()

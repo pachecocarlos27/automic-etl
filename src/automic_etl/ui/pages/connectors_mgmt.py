@@ -578,6 +578,3 @@ def _show_cloud_storage_connectors():
 
             st.markdown("---")
 
-
-# Run page when loaded by Streamlit
-show_connectors_management_page()

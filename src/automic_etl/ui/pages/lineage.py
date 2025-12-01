@@ -776,6 +776,3 @@ def _show_pipeline_impact_analysis() -> None:
         3. Validate data quality metrics
         """)
 
-
-# Run page when loaded by Streamlit
-show_lineage_page()

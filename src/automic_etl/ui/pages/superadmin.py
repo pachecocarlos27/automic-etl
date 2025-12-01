@@ -745,6 +745,3 @@ def show_superadmin():
     """Entry point for superadmin page."""
     render_superadmin_page()
 
-
-# Run page when loaded by Streamlit
-render_superadmin_page()

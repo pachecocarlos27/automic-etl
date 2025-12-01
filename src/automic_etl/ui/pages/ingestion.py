@@ -408,6 +408,3 @@ def show_unstructured_section():
                     progress.progress(i + 1)
                 st.success(f"✅ Processed {len(uploaded_docs)} documents!")
 
-
-# Run page when loaded by Streamlit
-show_ingestion_page()

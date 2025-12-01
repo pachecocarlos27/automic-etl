@@ -624,6 +624,3 @@ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
     st.subheader("Scheduled Reports")
     st.info("Configure scheduled reports in the Jobs & Orchestration page to automate quality reporting.")
 
-
-# Run page when loaded by Streamlit
-show_validation_page()

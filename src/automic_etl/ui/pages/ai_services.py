@@ -665,6 +665,3 @@ def _show_llm_configuration():
         if st.button("Save Configuration", type="primary"):
             st.success("LLM configuration saved!")
 
-
-# Run page when loaded by Streamlit
-show_ai_services_page()

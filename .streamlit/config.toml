@@ -11,6 +11,9 @@ gatherUsageStats = false
 serverAddress = "0.0.0.0"
 serverPort = 5000
 
+[client]
+showSidebarNavigation = false
+
 [theme]
 base = "light"
 primaryColor = "#0066FF"

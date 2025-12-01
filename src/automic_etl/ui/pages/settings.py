@@ -392,6 +392,3 @@ def show_general_settings():
         if uploaded_config:
             st.success("Configuration imported!")
 
-
-# Run page when loaded by Streamlit
-show_settings_page()

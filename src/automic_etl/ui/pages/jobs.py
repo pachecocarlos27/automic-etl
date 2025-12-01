@@ -491,6 +491,3 @@ def _show_execution_history():
     with col2:
         st.markdown("Page 1 of 10")
 
-
-# Run page when loaded by Streamlit
-show_jobs_page()
