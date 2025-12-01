@@ -287,6 +287,7 @@ uvicorn automic_etl.api:app --host 0.0.0.0 --port 8000
 | `/api/v1/queries/suggestions` | GET | Get suggested queries |
 | `/api/v1/queries/autocomplete` | GET | Query autocomplete |
 | `/api/v1/queries/schemas` | GET | Get available table schemas |
+| `/api/v1/queries/rate-limit-status` | GET | Check LLM rate limit status |
 | `/api/v1/queries/conversations/{id}` | GET, DELETE | Manage conversations |
 | `/api/v1/connectors` | GET, POST | Manage connectors |
 | `/api/v1/connectors/{id}/test` | POST | Test connection |

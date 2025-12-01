@@ -14,6 +14,116 @@ import streamlit as st
 
 from automic_etl.ui.state import notify_success
 
+# ============================================================================
+# Input Validation Constants
+# ============================================================================
+
+MAX_QUERY_LENGTH = 5000
+MIN_QUERY_LENGTH = 3
+MAX_SQL_LENGTH = 10000
+
+# Patterns that might indicate prompt injection attempts
+SUSPICIOUS_PATTERNS = [
+    "ignore previous",
+    "ignore above",
+    "disregard",
+    "forget everything",
+    "new instructions",
+    "system prompt",
+    "you are now",
+    "act as",
+    "pretend to be",
+    "jailbreak",
+]
+
+# SQL injection patterns
+SQL_INJECTION_PATTERNS = [
+    "'; --",
+    "' OR '1'='1",
+    "'; DROP",
+    "; DELETE",
+    "; UPDATE",
+    "; INSERT",
+    "UNION SELECT",
+    "/*",
+    "*/",
+    "xp_",
+    "exec(",
+    "execute(",
+]
+
+
+def _validate_query_input(query: str) -> tuple[bool, str | None]:
+    """
+    Validate natural language query input.
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not query or not query.strip():
+        return False, "Please enter a question"
+
+    query = query.strip()
+
+    # Length checks
+    if len(query) < MIN_QUERY_LENGTH:
+        return False, f"Question is too short (minimum {MIN_QUERY_LENGTH} characters)"
+
+    if len(query) > MAX_QUERY_LENGTH:
+        return False, f"Question is too long (maximum {MAX_QUERY_LENGTH} characters)"
+
+    # Check for suspicious patterns (prompt injection)
+    query_lower = query.lower()
+    for pattern in SUSPICIOUS_PATTERNS:
+        if pattern in query_lower:
+            return False, "Your question contains disallowed patterns. Please rephrase."
+
+    # Check for SQL injection patterns
+    for pattern in SQL_INJECTION_PATTERNS:
+        if pattern.lower() in query_lower:
+            return False, "Your question contains disallowed SQL patterns. Please rephrase."
+
+    return True, None
+
+
+def _validate_sql_input(sql: str) -> tuple[bool, str | None]:
+    """
+    Validate SQL query input.
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not sql or not sql.strip():
+        return False, "Please enter a SQL query"
+
+    sql = sql.strip()
+
+    # Length check
+    if len(sql) > MAX_SQL_LENGTH:
+        return False, f"SQL query is too long (maximum {MAX_SQL_LENGTH} characters)"
+
+    sql_upper = sql.upper()
+
+    # Block dangerous operations
+    dangerous_keywords = ["DROP", "TRUNCATE", "DELETE", "ALTER", "CREATE", "GRANT", "REVOKE"]
+    for keyword in dangerous_keywords:
+        # Check for keyword as a standalone word
+        if f" {keyword} " in f" {sql_upper} ":
+            return False, f"Dangerous SQL operation '{keyword}' is not allowed"
+
+    # Block multiple statements
+    if sql.count(';') > 1:
+        return False, "Multiple SQL statements are not allowed"
+
+    return True, None
+
+
+def _sanitize_input(text: str) -> str:
+    """Sanitize user input by removing potentially dangerous characters."""
+    # Remove null bytes and control characters
+    sanitized = ''.join(char for char in text if ord(char) >= 32 or char in '\n\t')
+    return sanitized.strip()
+
 
 def show_query_studio_page():
     """Display the query studio page with LLM-powered SQL interface."""
@@ -209,8 +319,18 @@ def show_natural_language_query():
     _show_example_queries()
 
     # Handle generate
-    if generate_btn and query:
-        _generate_sql_from_nl(query)
+    if generate_btn:
+        if query:
+            # Sanitize and validate input
+            sanitized_query = _sanitize_input(query)
+            is_valid, error_msg = _validate_query_input(sanitized_query)
+
+            if is_valid:
+                _generate_sql_from_nl(sanitized_query)
+            else:
+                st.error(error_msg)
+        else:
+            st.warning("Please enter a question to generate SQL")
 
     # Handle execute
     if execute_btn and st.session_state.generated_sql:
@@ -864,8 +984,15 @@ def show_sql_editor():
 
         with col1:
             if st.button("▶️ Run", type="primary", use_container_width=True):
-                st.session_state.generated_sql = sql
-                _execute_generated_sql()
+                # Validate SQL before running
+                sanitized_sql = _sanitize_input(sql)
+                is_valid, error_msg = _validate_sql_input(sanitized_sql)
+
+                if is_valid:
+                    st.session_state.generated_sql = sanitized_sql
+                    _execute_generated_sql()
+                else:
+                    st.error(error_msg)
 
         with col2:
             if st.button("📋 Format", use_container_width=True):
@@ -877,9 +1004,15 @@ def show_sql_editor():
 
         with col3:
             if st.button("✅ Validate", use_container_width=True):
-                is_valid, message = _validate_sql(sql)
+                sanitized_sql = _sanitize_input(sql)
+                is_valid, message = _validate_sql_input(sanitized_sql)
                 if is_valid:
-                    st.success(message)
+                    # Also do syntax validation
+                    syntax_valid, syntax_msg = _validate_sql(sanitized_sql)
+                    if syntax_valid:
+                        st.success(syntax_msg)
+                    else:
+                        st.error(syntax_msg)
                 else:
                     st.error(message)
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -31,12 +30,47 @@ from automic_etl.auth.security import (
     ResourceType,
     AccessLevel,
 )
+from automic_etl.db.pipeline_service import get_pipeline_service
+from automic_etl.db.models import PipelineModel, PipelineRunModel
 
 router = APIRouter()
 
-# In-memory storage for demo (would be database in production)
-_pipelines: dict[str, dict] = {}
-_pipeline_runs: dict[str, dict] = {}
+
+def _pipeline_to_dict(pipeline: PipelineModel) -> dict:
+    """Convert database model to API response format."""
+    return {
+        "id": pipeline.id,
+        "company_id": pipeline.owner_id,  # Use owner_id for company tracking
+        "created_by": pipeline.owner_id,
+        "name": pipeline.name,
+        "description": pipeline.description or "",
+        "stages": pipeline.transformations or [],
+        "schedule": pipeline.schedule,
+        "enabled": pipeline.status not in ("disabled", "draft"),
+        "tags": pipeline.metadata_.get("tags", []) if pipeline.metadata_ else [],
+        "config": pipeline.source_config or {},
+        "created_at": pipeline.created_at,
+        "updated_at": pipeline.updated_at,
+        "last_run": pipeline.last_run_at,
+        "last_status": pipeline.status,
+    }
+
+
+def _run_to_dict(run: PipelineRunModel, pipeline_name: str = "") -> dict:
+    """Convert database run model to API response format."""
+    return {
+        "run_id": run.id,
+        "pipeline_id": run.pipeline_id,
+        "pipeline_name": pipeline_name,
+        "status": run.status,
+        "started_at": run.started_at,
+        "completed_at": run.completed_at,
+        "metrics": {
+            "rows_processed": run.records_processed or 0,
+            "execution_time_ms": (run.duration_seconds or 0) * 1000,
+        },
+        "error": run.error_message,
+    }
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -58,12 +92,20 @@ async def list_pipelines(
         tag: Filter by tag
         search: Search in name and description
     """
+    service = get_pipeline_service()
+
+    # Get pipelines from database
+    db_pipelines = service.list_pipelines(
+        status=status.value if status else None,
+    )
+
+    # Convert to response format
+    pipelines = [_pipeline_to_dict(p) for p in db_pipelines]
+
     # Filter by company (multi-tenant isolation)
-    pipelines = filter_by_company(ctx, list(_pipelines.values()))
+    pipelines = filter_by_company(ctx, pipelines)
 
     # Apply filters
-    if status:
-        pipelines = [p for p in pipelines if p.get("last_status") == status]
     if tag:
         pipelines = [p for p in pipelines if tag in p.get("tags", [])]
     if search:
@@ -99,33 +141,31 @@ async def create_pipeline(
     Args:
         pipeline: Pipeline configuration
     """
+    service = get_pipeline_service()
+
     # Check for duplicate name within company
-    company_pipelines = filter_by_company(ctx, list(_pipelines.values()))
-    if any(p["name"] == pipeline.name for p in company_pipelines):
+    existing = service.list_pipelines(owner_id=ctx.user.user_id)
+    if any(p.name == pipeline.name for p in existing):
         raise HTTPException(status_code=400, detail=f"Pipeline '{pipeline.name}' already exists")
 
-    pipeline_id = str(uuid.uuid4())
-    now = datetime.utcnow()
+    # Prepare source config with additional settings
+    source_config = pipeline.config or {}
+    metadata = {"tags": pipeline.tags or []}
 
-    pipeline_data = {
-        "id": pipeline_id,
-        "company_id": ctx.tenant.company_id,  # Multi-tenant: associate with company
-        "created_by": ctx.user.user_id,
-        "name": pipeline.name,
-        "description": pipeline.description,
-        "stages": [s.model_dump() for s in pipeline.stages],
-        "schedule": pipeline.schedule,
-        "enabled": pipeline.enabled,
-        "tags": pipeline.tags,
-        "config": pipeline.config,
-        "created_at": now,
-        "updated_at": now,
-        "last_run": None,
-        "last_status": None,
-    }
+    db_pipeline = service.create_pipeline(
+        name=pipeline.name,
+        owner_id=ctx.user.user_id,
+        description=pipeline.description or "",
+        schedule=pipeline.schedule,
+        transformations=[s.model_dump() for s in pipeline.stages] if pipeline.stages else [],
+        source_config=source_config,
+    )
 
-    _pipelines[pipeline_id] = pipeline_data
-    return PipelineResponse(**pipeline_data)
+    # Update metadata with tags
+    if pipeline.tags:
+        service.update_pipeline(db_pipeline.id, metadata_=metadata)
+
+    return PipelineResponse(**_pipeline_to_dict(db_pipeline))
 
 
 @router.get("/{pipeline_id}", response_model=PipelineResponse)
@@ -139,18 +179,21 @@ async def get_pipeline(
     Args:
         pipeline_id: Pipeline ID
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.READ
+        pipeline_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    return PipelineResponse(**pipeline)
+    return PipelineResponse(**pipeline_dict)
 
 
 @router.put("/{pipeline_id}", response_model=PipelineResponse)
@@ -166,34 +209,36 @@ async def update_pipeline(
         pipeline_id: Pipeline ID
         update: Fields to update
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.WRITE
+        pipeline_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
-    # Apply updates
+    # Build update kwargs
+    update_kwargs = {}
     if update.description is not None:
-        pipeline["description"] = update.description
+        update_kwargs["description"] = update.description
     if update.stages is not None:
-        pipeline["stages"] = [s.model_dump() for s in update.stages]
+        update_kwargs["transformations"] = [s.model_dump() for s in update.stages]
     if update.schedule is not None:
-        pipeline["schedule"] = update.schedule
+        update_kwargs["schedule"] = update.schedule
     if update.enabled is not None:
-        pipeline["enabled"] = update.enabled
-    if update.tags is not None:
-        pipeline["tags"] = update.tags
+        update_kwargs["status"] = "active" if update.enabled else "disabled"
     if update.config is not None:
-        pipeline["config"] = update.config
+        update_kwargs["source_config"] = update.config
 
-    pipeline["updated_at"] = datetime.utcnow()
+    updated = service.update_pipeline(pipeline_id, **update_kwargs)
 
-    return PipelineResponse(**pipeline)
+    return PipelineResponse(**_pipeline_to_dict(updated))
 
 
 @router.delete("/{pipeline_id}", response_model=BaseResponse)
@@ -207,18 +252,21 @@ async def delete_pipeline(
     Args:
         pipeline_id: Pipeline ID
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access with ADMIN level for delete
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.ADMIN
+        pipeline_dict.get("company_id", ""), AccessLevel.ADMIN
     )
 
-    del _pipelines[pipeline_id]
+    service.delete_pipeline(pipeline_id)
 
     return BaseResponse(success=True, message="Pipeline deleted successfully")
 
@@ -237,76 +285,86 @@ async def run_pipeline(
         pipeline_id: Pipeline ID
         request: Run configuration
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access with EXECUTE level
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.EXECUTE
+        pipeline_dict.get("company_id", ""), AccessLevel.EXECUTE
     )
 
-    if not pipeline["enabled"]:
+    if pipeline.status == "disabled":
         raise HTTPException(status_code=400, detail="Pipeline is disabled")
 
-    run_id = str(uuid.uuid4())
-    now = datetime.utcnow()
+    # Create a run in the database
+    run = service.run_pipeline(pipeline_id)
 
-    run_data = {
-        "run_id": run_id,
-        "pipeline_id": pipeline_id,
-        "pipeline_name": pipeline["name"],
-        "status": PipelineStatus.PENDING if request.async_execution else PipelineStatus.RUNNING,
-        "started_at": now,
-        "completed_at": None,
-        "metrics": {},
-        "error": None,
-    }
-
-    _pipeline_runs[run_id] = run_data
-
-    # Update pipeline last run
-    pipeline["last_run"] = now
-    pipeline["last_status"] = run_data["status"]
+    if not run:
+        raise HTTPException(status_code=500, detail="Failed to create pipeline run")
 
     if request.async_execution:
-        # In production, this would queue the job
-        background_tasks.add_task(_execute_pipeline, run_id, pipeline, request.config_overrides)
+        # Execute in background
+        background_tasks.add_task(_execute_pipeline, run.id, pipeline_id, request.config_overrides)
 
-    return PipelineRunResponse(**run_data)
+    return PipelineRunResponse(**_run_to_dict(run, pipeline.name))
 
 
-async def _execute_pipeline(run_id: str, pipeline: dict, config_overrides: dict):
+async def _execute_pipeline(run_id: str, pipeline_id: str, config_overrides: dict):
     """Execute pipeline in background."""
     import asyncio
+    import time
 
-    run = _pipeline_runs[run_id]
-    run["status"] = PipelineStatus.RUNNING
+    from automic_etl.notifications import get_notification_event_service
+
+    service = get_pipeline_service()
+    notification_service = get_notification_event_service()
+
+    # Get pipeline info
+    pipeline = service.get_pipeline(pipeline_id)
+    pipeline_name = pipeline.name if pipeline else f"Pipeline-{pipeline_id[:8]}"
+
+    # Emit start notification
+    notification_service.pipeline_started(pipeline_name, pipeline_id)
+
+    start_time = time.time()
 
     try:
         # Simulate pipeline execution
         await asyncio.sleep(2)
 
-        run["status"] = PipelineStatus.COMPLETED
-        run["completed_at"] = datetime.utcnow()
-        run["metrics"] = {
-            "rows_processed": 1000,
-            "execution_time_ms": 2000,
-        }
+        duration = time.time() - start_time
+        rows_processed = 1000
 
-        # Update pipeline status
-        if pipeline["id"] in _pipelines:
-            _pipelines[pipeline["id"]]["last_status"] = PipelineStatus.COMPLETED
+        # Complete the run successfully
+        service.complete_run(
+            run_id=run_id,
+            status="completed",
+            records_processed=rows_processed,
+        )
+
+        # Emit completion notification
+        notification_service.pipeline_completed(
+            pipeline_name, pipeline_id, duration, rows_processed
+        )
 
     except Exception as e:
-        run["status"] = PipelineStatus.FAILED
-        run["error"] = str(e)
-        run["completed_at"] = datetime.utcnow()
+        duration = time.time() - start_time
 
-        if pipeline["id"] in _pipelines:
-            _pipelines[pipeline["id"]]["last_status"] = PipelineStatus.FAILED
+        # Complete the run with error
+        service.complete_run(
+            run_id=run_id,
+            status="failed",
+            error_message=str(e),
+        )
+
+        # Emit failure notification
+        notification_service.pipeline_failed(pipeline_name, pipeline_id, str(e))
 
 
 @router.get("/{pipeline_id}/runs", response_model=PaginatedResponse)
@@ -326,25 +384,27 @@ async def list_pipeline_runs(
         page_size: Items per page
         status: Filter by status
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.READ
+        pipeline_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    runs = [r for r in _pipeline_runs.values() if r["pipeline_id"] == pipeline_id]
+    db_runs = service.get_pipeline_runs(pipeline_id, limit=100)
+    runs = [_run_to_dict(r, pipeline.name) for r in db_runs]
 
     if status:
-        runs = [r for r in runs if r["status"] == status]
+        runs = [r for r in runs if r["status"] == status.value]
 
-    # Sort by started_at descending
-    runs.sort(key=lambda x: x["started_at"], reverse=True)
-
+    # Sort by started_at descending (already sorted from service)
     total = len(runs)
     start = (page - 1) * page_size
     end = start + page_size
@@ -371,25 +431,26 @@ async def get_pipeline_run(
         pipeline_id: Pipeline ID
         run_id: Run ID
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.READ
+        pipeline_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    if run_id not in _pipeline_runs:
-        raise HTTPException(status_code=404, detail="Pipeline run not found")
+    runs = service.get_pipeline_runs(pipeline_id, limit=100)
+    for run in runs:
+        if run.id == run_id:
+            return PipelineRunResponse(**_run_to_dict(run, pipeline.name))
 
-    run = _pipeline_runs[run_id]
-    if run["pipeline_id"] != pipeline_id:
-        raise HTTPException(status_code=404, detail="Pipeline run not found")
-
-    return PipelineRunResponse(**run)
+    raise HTTPException(status_code=404, detail="Pipeline run not found")
 
 
 @router.post("/{pipeline_id}/runs/{run_id}/cancel", response_model=BaseResponse)
@@ -405,28 +466,32 @@ async def cancel_pipeline_run(
         pipeline_id: Pipeline ID
         run_id: Run ID
     """
-    if pipeline_id not in _pipelines:
+    service = get_pipeline_service()
+    pipeline = service.get_pipeline(pipeline_id)
+
+    if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
 
-    pipeline = _pipelines[pipeline_id]
+    pipeline_dict = _pipeline_to_dict(pipeline)
 
     # Check tenant access with EXECUTE level (same as running)
     check_resource_access(
         ctx, ResourceType.PIPELINE, pipeline_id,
-        pipeline.get("company_id", ""), AccessLevel.EXECUTE
+        pipeline_dict.get("company_id", ""), AccessLevel.EXECUTE
     )
 
-    if run_id not in _pipeline_runs:
-        raise HTTPException(status_code=404, detail="Pipeline run not found")
+    runs = service.get_pipeline_runs(pipeline_id, limit=100)
+    for run in runs:
+        if run.id == run_id:
+            if run.status not in ("pending", "running"):
+                raise HTTPException(status_code=400, detail="Pipeline run is not active")
 
-    run = _pipeline_runs[run_id]
-    if run["pipeline_id"] != pipeline_id:
-        raise HTTPException(status_code=404, detail="Pipeline run not found")
+            service.complete_run(
+                run_id=run_id,
+                status="cancelled",
+                error_message="Cancelled by user",
+            )
 
-    if run["status"] not in (PipelineStatus.PENDING, PipelineStatus.RUNNING):
-        raise HTTPException(status_code=400, detail="Pipeline run is not active")
+            return BaseResponse(success=True, message="Pipeline run cancelled")
 
-    run["status"] = PipelineStatus.CANCELLED
-    run["completed_at"] = datetime.utcnow()
-
-    return BaseResponse(success=True, message="Pipeline run cancelled")
+    raise HTTPException(status_code=404, detail="Pipeline run not found")

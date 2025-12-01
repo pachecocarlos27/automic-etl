@@ -205,3 +205,160 @@ class DataTableModel(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     source_pipeline_id = Column(String(36), nullable=True)
     quality_score = Column(Float, nullable=True)
+    last_profiled_at = Column(DateTime, nullable=True)
+    profile_data = Column(JSON, default=dict)
+    tags = Column(JSON, default=list)
+    description = Column(Text, default="")
+
+
+class JobScheduleModel(Base):
+    """Scheduled job definitions."""
+    __tablename__ = "job_schedules"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False, unique=True)
+    description = Column(Text, default="")
+    job_type = Column(String(50), nullable=False)  # pipeline, validation, notification, custom
+    target_id = Column(String(36), nullable=True)  # pipeline_id or other target
+    schedule_type = Column(String(20), nullable=False)  # cron, interval, once
+    schedule_value = Column(String(100), nullable=False)  # cron expression or interval
+    timezone = Column(String(50), default="UTC")
+    enabled = Column(Boolean, default=True)
+    config = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_run_at = Column(DateTime, nullable=True)
+    next_run_at = Column(DateTime, nullable=True)
+    run_count = Column(Integer, default=0)
+    created_by = Column(String(36), nullable=True)
+
+    runs = relationship("JobRunModel", back_populates="schedule", cascade="all, delete-orphan")
+
+
+class JobRunModel(Base):
+    """Job execution history."""
+    __tablename__ = "job_runs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    schedule_id = Column(String(36), ForeignKey("job_schedules.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(20), default="pending")  # pending, running, completed, failed, cancelled
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+    result = Column(JSON, default=dict)
+    error_message = Column(Text, nullable=True)
+    logs = Column(JSON, default=list)
+    triggered_by = Column(String(50), default="scheduler")  # scheduler, manual, api
+
+    schedule = relationship("JobScheduleModel", back_populates="runs")
+
+
+class ValidationRuleModel(Base):
+    """Data validation rules."""
+    __tablename__ = "validation_rules"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    rule_type = Column(String(50), nullable=False)  # not_null, unique, regex, range, referential, custom
+    target_table = Column(String(200), nullable=False)
+    target_column = Column(String(100), nullable=True)
+    rule_config = Column(JSON, default=dict)  # type-specific configuration
+    severity = Column(String(20), default="warning")  # critical, high, medium, low
+    enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(36), nullable=True)
+    last_run_at = Column(DateTime, nullable=True)
+    last_status = Column(String(20), nullable=True)  # passing, failing
+
+
+class ValidationResultModel(Base):
+    """Validation execution results."""
+    __tablename__ = "validation_results"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    rule_id = Column(String(36), ForeignKey("validation_rules.id", ondelete="CASCADE"), nullable=False)
+    run_id = Column(String(36), nullable=True)  # pipeline_run_id or job_run_id
+    status = Column(String(20), nullable=False)  # passed, failed
+    executed_at = Column(DateTime, default=datetime.utcnow)
+    rows_checked = Column(Integer, default=0)
+    rows_passed = Column(Integer, default=0)
+    rows_failed = Column(Integer, default=0)
+    failure_samples = Column(JSON, default=list)  # sample of failing rows
+    details = Column(JSON, default=dict)
+
+
+class ConnectorConfigModel(Base):
+    """Data connector configurations."""
+    __tablename__ = "connector_configs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False, unique=True)
+    connector_type = Column(String(50), nullable=False)  # postgresql, mysql, s3, kafka, salesforce, etc.
+    category = Column(String(50), nullable=False)  # database, api, storage, streaming
+    config = Column(JSON, default=dict)  # encrypted connection details
+    credentials = Column(JSON, default=dict)  # encrypted credentials
+    status = Column(String(20), default="inactive")  # active, inactive, error
+    last_tested_at = Column(DateTime, nullable=True)
+    last_test_status = Column(String(20), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(36), nullable=True)
+    metadata_ = Column("metadata", JSON, default=dict)  # tables discovered, row counts, etc.
+
+
+class NotificationChannelModel(Base):
+    """Notification channel configurations."""
+    __tablename__ = "notification_channels"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False, unique=True)
+    channel_type = Column(String(50), nullable=False)  # email, slack, teams, pagerduty, webhook
+    config = Column(JSON, default=dict)  # channel-specific configuration
+    enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(36), nullable=True)
+    last_used_at = Column(DateTime, nullable=True)
+    last_status = Column(String(20), nullable=True)  # success, failed
+
+
+class AlertRuleModel(Base):
+    """Alert rules for triggering notifications."""
+    __tablename__ = "alert_rules"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    rule_type = Column(String(50), nullable=False)  # pipeline_failure, quality_threshold, job_failure, custom
+    condition = Column(JSON, default=dict)  # rule-specific conditions
+    severity = Column(String(20), default="warning")  # critical, high, medium, low
+    channels = Column(JSON, default=list)  # list of channel_ids to notify
+    enabled = Column(Boolean, default=True)
+    cooldown_minutes = Column(Integer, default=15)  # minimum time between alerts
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(36), nullable=True)
+    last_triggered_at = Column(DateTime, nullable=True)
+    trigger_count = Column(Integer, default=0)
+
+
+class AlertHistoryModel(Base):
+    """Alert history and audit trail."""
+    __tablename__ = "alert_history"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    rule_id = Column(String(36), ForeignKey("alert_rules.id", ondelete="SET NULL"), nullable=True)
+    title = Column(String(500), nullable=False)
+    message = Column(Text, nullable=False)
+    severity = Column(String(20), nullable=False)
+    source = Column(String(100), nullable=True)  # what triggered the alert
+    status = Column(String(20), default="triggered")  # triggered, acknowledged, resolved
+    triggered_at = Column(DateTime, default=datetime.utcnow)
+    acknowledged_at = Column(DateTime, nullable=True)
+    acknowledged_by = Column(String(36), nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
+    resolved_by = Column(String(36), nullable=True)
+    notifications_sent = Column(JSON, default=list)  # list of channel notifications sent
+    details = Column(JSON, default=dict)

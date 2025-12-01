@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -32,11 +31,40 @@ from automic_etl.auth.security import (
     ResourceType,
     AccessLevel,
 )
+from automic_etl.db.table_service import get_table_service
+from automic_etl.db.models import DataTableModel
 
 router = APIRouter()
 
-# In-memory storage for demo
-_tables: dict[str, dict] = {}
+
+def _table_to_dict(table: DataTableModel) -> dict:
+    """Convert database model to API response format."""
+    schema = table.schema_definition or {}
+    metadata = schema.get("_metadata", {})
+    columns = schema.get("columns", [])
+
+    # Build location
+    location = schema.get("location", f"lakehouse/{table.layer}/{table.name}")
+    format_type = schema.get("format", "delta")
+    partition_by = schema.get("partition_by", [])
+
+    return {
+        "id": table.id,
+        "company_id": metadata.get("created_by", ""),
+        "created_by": metadata.get("created_by", ""),
+        "name": table.name,
+        "tier": table.layer,
+        "columns": columns,
+        "description": table.description or "",
+        "partition_by": partition_by,
+        "location": location,
+        "format": format_type,
+        "row_count": table.row_count or 0,
+        "size_bytes": table.size_bytes or 0,
+        "created_at": table.created_at,
+        "updated_at": table.updated_at,
+        "tags": table.tags or [],
+    }
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -58,23 +86,23 @@ async def list_tables(
         tag: Filter by tag
         search: Search in name and description
     """
+    service = get_table_service()
+
+    # Get tables from database
+    db_tables = service.list_tables(
+        layer=tier.value if tier else None,
+        tag=tag,
+        search=search,
+    )
+
+    # Convert to response format
+    tables = [_table_to_dict(t) for t in db_tables]
+
     # Filter by company (multi-tenant isolation)
-    tables = filter_by_company(ctx, list(_tables.values()))
+    tables = filter_by_company(ctx, tables)
 
     # Filter by accessible data tiers
     tables = [t for t in tables if ctx.can_access_tier(t.get("tier", "bronze"))]
-
-    # Apply filters
-    if tier:
-        tables = [t for t in tables if t.get("tier") == tier]
-    if tag:
-        tables = [t for t in tables if tag in t.get("tags", [])]
-    if search:
-        search_lower = search.lower()
-        tables = [
-            t for t in tables
-            if search_lower in t["name"].lower() or search_lower in t.get("description", "").lower()
-        ]
 
     # Paginate
     total = len(tables)
@@ -108,40 +136,38 @@ async def create_table(
             detail=f"Access denied to {table.tier.value} tier"
         )
 
-    # Check for duplicate name in same tier within company
-    company_tables = filter_by_company(ctx, list(_tables.values()))
-    if any(t["name"] == table.name and t["tier"] == table.tier for t in company_tables):
+    service = get_table_service()
+
+    # Check for duplicate name in same tier
+    existing = service.get_table_by_name(table.name, table.tier.value)
+    if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"Table '{table.name}' already exists in {table.tier} tier"
+            detail=f"Table '{table.name}' already exists in {table.tier.value} tier"
         )
-
-    table_id = str(uuid.uuid4())
-    now = datetime.utcnow()
 
     # Build location if not provided
     location = table.location or f"lakehouse/{table.tier.value}/{table.name}"
 
-    table_data = {
-        "id": table_id,
-        "company_id": ctx.tenant.company_id,  # Multi-tenant: associate with company
-        "created_by": ctx.user.user_id,
-        "name": table.name,
-        "tier": table.tier,
+    # Build schema definition
+    schema_definition = {
         "columns": [c.model_dump() for c in table.columns],
-        "description": table.description,
-        "partition_by": table.partition_by,
+        "partition_by": table.partition_by or [],
         "location": location,
-        "format": table.format,
-        "row_count": 0,
-        "size_bytes": 0,
-        "created_at": now,
-        "updated_at": now,
-        "tags": table.tags,
+        "format": table.format or "delta",
+        "_metadata": {"created_by": ctx.user.user_id},
     }
 
-    _tables[table_id] = table_data
-    return TableResponse(**table_data)
+    db_table = service.create_table(
+        name=table.name,
+        layer=table.tier.value,
+        schema_definition=schema_definition,
+        description=table.description or "",
+        tags=table.tags or [],
+        created_by=ctx.user.user_id,
+    )
+
+    return TableResponse(**_table_to_dict(db_table))
 
 
 @router.get("/{table_id}", response_model=TableResponse)
@@ -155,22 +181,25 @@ async def get_table(
     Args:
         table_id: Table ID
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.READ
+        table_dict.get("company_id", ""), AccessLevel.READ
     )
 
     # Check tier access
-    if not ctx.can_access_tier(table.get("tier", "bronze")):
-        raise HTTPException(status_code=403, detail=f"Access denied to {table.get('tier')} tier")
+    if not ctx.can_access_tier(table.layer):
+        raise HTTPException(status_code=403, detail=f"Access denied to {table.layer} tier")
 
-    return TableResponse(**table)
+    return TableResponse(**table_dict)
 
 
 @router.get("/by-name/{tier}/{table_name}", response_model=TableResponse)
@@ -190,14 +219,13 @@ async def get_table_by_name(
     if not ctx.can_access_tier(tier.value):
         raise HTTPException(status_code=403, detail=f"Access denied to {tier.value} tier")
 
-    # Filter by company first
-    company_tables = filter_by_company(ctx, list(_tables.values()))
+    service = get_table_service()
+    table = service.get_table_by_name(table_name, tier.value)
 
-    for table in company_tables:
-        if table["tier"] == tier and table["name"] == table_name:
-            return TableResponse(**table)
+    if not table:
+        raise HTTPException(status_code=404, detail="Table not found")
 
-    raise HTTPException(status_code=404, detail="Table not found")
+    return TableResponse(**_table_to_dict(table))
 
 
 @router.delete("/{table_id}", response_model=BaseResponse)
@@ -213,26 +241,30 @@ async def delete_table(
         table_id: Table ID
         drop_data: Also delete the underlying data
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access with ADMIN level for delete
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.ADMIN
+        table_dict.get("company_id", ""), AccessLevel.ADMIN
     )
 
     if drop_data:
         # In production, this would delete the actual data
         pass
 
-    del _tables[table_id]
+    name = table.name
+    service.delete_table(table_id)
 
     return BaseResponse(
         success=True,
-        message=f"Table '{table['name']}' deleted" + (" with data" if drop_data else "")
+        message=f"Table '{name}' deleted" + (" with data" if drop_data else "")
     )
 
 
@@ -249,31 +281,34 @@ async def query_table_data(
         table_id: Table ID
         request: Query parameters
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.READ
+        table_dict.get("company_id", ""), AccessLevel.READ
     )
 
     # Check tier access
-    if not ctx.can_access_tier(table.get("tier", "bronze")):
-        raise HTTPException(status_code=403, detail=f"Access denied to {table.get('tier')} tier")
+    if not ctx.can_access_tier(table.layer):
+        raise HTTPException(status_code=403, detail=f"Access denied to {table.layer} tier")
 
     # In production, this would query actual data with RLS filters applied
-    # RLS filters would be applied via: apply_rls_filters(ctx, table["name"], query)
-    columns = request.columns or [c["name"] for c in table["columns"]]
+    columns = table_dict.get("columns", [])
+    col_names = request.columns or [c["name"] for c in columns]
 
     # Generate sample data
     sample_data = []
     for i in range(min(request.limit, 10)):
         row = []
-        for col in columns:
-            col_def = next((c for c in table["columns"] if c["name"] == col), None)
+        for col_name in col_names:
+            col_def = next((c for c in columns if c["name"] == col_name), None)
             if col_def:
                 dtype = col_def.get("data_type", "STRING")
                 if dtype in ("INT", "INTEGER", "BIGINT"):
@@ -289,9 +324,9 @@ async def query_table_data(
         sample_data.append(row)
 
     return TableDataResponse(
-        columns=columns,
+        columns=col_names,
         data=sample_data,
-        total_rows=table.get("row_count", len(sample_data)),
+        total_rows=table.row_count or len(sample_data),
         returned_rows=len(sample_data),
     )
 
@@ -307,18 +342,22 @@ async def get_table_schema(
     Args:
         table_id: Table ID
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.READ
+        table_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    return [ColumnSchema(**c) for c in table["columns"]]
+    columns = table_dict.get("columns", [])
+    return [ColumnSchema(**c) for c in columns]
 
 
 @router.put("/{table_id}/schema", response_model=TableResponse)
@@ -334,21 +373,23 @@ async def update_table_schema(
         table_id: Table ID
         columns: New column definitions
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.WRITE
+        table_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
-    table["columns"] = [c.model_dump() for c in columns]
-    table["updated_at"] = datetime.utcnow()
+    updated = service.update_schema(table_id, [c.model_dump() for c in columns])
 
-    return TableResponse(**table)
+    return TableResponse(**_table_to_dict(updated))
 
 
 @router.post("/{table_id}/columns", response_model=TableResponse)
@@ -364,25 +405,28 @@ async def add_column(
         table_id: Table ID
         column: Column definition
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.WRITE
+        table_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
     # Check for duplicate column
-    if any(c["name"] == column.name for c in table["columns"]):
+    columns = table_dict.get("columns", [])
+    if any(c["name"] == column.name for c in columns):
         raise HTTPException(status_code=400, detail=f"Column '{column.name}' already exists")
 
-    table["columns"].append(column.model_dump())
-    table["updated_at"] = datetime.utcnow()
+    updated = service.add_column(table_id, column.model_dump())
 
-    return TableResponse(**table)
+    return TableResponse(**_table_to_dict(updated))
 
 
 @router.delete("/{table_id}/columns/{column_name}", response_model=TableResponse)
@@ -398,27 +442,26 @@ async def drop_column(
         table_id: Table ID
         column_name: Column name to drop
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.WRITE
+        table_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
-    # Find and remove column
-    original_count = len(table["columns"])
-    table["columns"] = [c for c in table["columns"] if c["name"] != column_name]
+    updated = service.drop_column(table_id, column_name)
 
-    if len(table["columns"]) == original_count:
+    if not updated:
         raise HTTPException(status_code=404, detail=f"Column '{column_name}' not found")
 
-    table["updated_at"] = datetime.utcnow()
-
-    return TableResponse(**table)
+    return TableResponse(**_table_to_dict(updated))
 
 
 @router.get("/{table_id}/profile")
@@ -432,39 +475,49 @@ async def get_table_profile(
     Args:
         table_id: Table ID
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.READ
+        table_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    # In production, this would compute actual profile
+    # Use stored profile data or generate sample
+    profile_data = table.profile_data or {}
+    columns = table_dict.get("columns", [])
+
     profile = {
         "table_id": table_id,
-        "table_name": table["name"],
-        "row_count": table.get("row_count", 0),
-        "column_count": len(table["columns"]),
-        "size_bytes": table.get("size_bytes", 0),
-        "columns": []
+        "table_name": table.name,
+        "row_count": table.row_count or 0,
+        "column_count": len(columns),
+        "size_bytes": table.size_bytes or 0,
+        "quality_score": table.quality_score,
+        "last_profiled_at": table.last_profiled_at,
+        "columns": profile_data.get("columns", [])
     }
 
-    for col in table["columns"]:
-        col_profile = {
-            "name": col["name"],
-            "data_type": col.get("data_type"),
-            "null_count": 0,
-            "null_percent": 0.0,
-            "distinct_count": 100,
-            "min": None,
-            "max": None,
-            "mean": None,
-        }
-        profile["columns"].append(col_profile)
+    # Generate default column profile if not available
+    if not profile["columns"]:
+        for col in columns:
+            col_profile = {
+                "name": col["name"],
+                "data_type": col.get("data_type"),
+                "null_count": 0,
+                "null_percent": 0.0,
+                "distinct_count": 100,
+                "min": None,
+                "max": None,
+                "mean": None,
+            }
+            profile["columns"].append(col_profile)
 
     return profile
 
@@ -482,20 +535,20 @@ async def add_tags(
         table_id: Table ID
         tags: Tags to add
     """
-    if table_id not in _tables:
+    service = get_table_service()
+    table = service.get_table(table_id)
+
+    if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
-    table = _tables[table_id]
+    table_dict = _table_to_dict(table)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.TABLE, table_id,
-        table.get("company_id", ""), AccessLevel.WRITE
+        table_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
-    existing_tags = set(table.get("tags", []))
-    existing_tags.update(tags)
-    table["tags"] = list(existing_tags)
-    table["updated_at"] = datetime.utcnow()
+    updated = service.add_tags(table_id, tags)
 
-    return TableResponse(**table)
+    return TableResponse(**_table_to_dict(updated))

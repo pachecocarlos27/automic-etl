@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -16,19 +15,50 @@ from automic_etl.api.models import (
     PaginatedResponse,
     BaseResponse,
 )
+from automic_etl.db.job_service import get_job_service
 
 router = APIRouter()
 
-# In-memory storage
-_jobs: dict[str, dict] = {}
-_job_runs: dict[str, list[dict]] = {}
+
+def _schedule_to_db(schedule: JobScheduleModel) -> dict:
+    """Convert database model to API response format."""
+    return {
+        "id": schedule.id,
+        "name": schedule.name,
+        "pipeline_id": schedule.target_id,
+        "pipeline_name": f"Pipeline-{schedule.target_id[:8]}" if schedule.target_id else None,
+        "schedule": schedule.schedule_value,
+        "enabled": schedule.enabled,
+        "config": schedule.config or {},
+        "notifications": schedule.config.get("notifications", {}) if schedule.config else {},
+        "status": JobStatus.SCHEDULED if schedule.enabled else JobStatus.PAUSED,
+        "last_run": schedule.last_run_at,
+        "next_run": schedule.next_run_at,
+        "run_count": schedule.run_count or 0,
+        "success_count": schedule.config.get("success_count", 0) if schedule.config else 0,
+        "failure_count": schedule.config.get("failure_count", 0) if schedule.config else 0,
+        "created_at": schedule.created_at,
+    }
 
 
-def _parse_cron(cron_expr: str) -> datetime:
-    """Parse cron expression and return next run time."""
-    # Simplified - in production use croniter
-    now = datetime.utcnow()
-    return now + timedelta(hours=1)
+def _run_to_dict(run: JobRunModel, job_name: str = "") -> dict:
+    """Convert database run model to API response format."""
+    return {
+        "run_id": run.id,
+        "job_id": run.schedule_id,
+        "job_name": job_name,
+        "status": run.status,
+        "started_at": run.started_at,
+        "completed_at": run.completed_at,
+        "duration_seconds": run.duration_seconds,
+        "metrics": run.result or {},
+        "logs": run.logs or [],
+        "error": run.error_message,
+    }
+
+
+# Import models for type hints
+from automic_etl.db.models import JobScheduleModel, JobRunModel
 
 
 @router.get("", response_model=PaginatedResponse)
@@ -49,15 +79,20 @@ async def list_jobs(
         pipeline_id: Filter by pipeline
         enabled: Filter by enabled status
     """
-    jobs = list(_jobs.values())
+    service = get_job_service()
+    schedules = service.list_schedules(
+        job_type="pipeline",
+        enabled=enabled,
+    )
 
-    # Apply filters
+    # Convert to response format
+    jobs = [_schedule_to_db(s) for s in schedules]
+
+    # Apply additional filters
     if status:
         jobs = [j for j in jobs if j["status"] == status]
     if pipeline_id:
         jobs = [j for j in jobs if j["pipeline_id"] == pipeline_id]
-    if enabled is not None:
-        jobs = [j for j in jobs if j["enabled"] == enabled]
 
     # Paginate
     total = len(jobs)
@@ -81,35 +116,30 @@ async def create_job(job: JobCreate):
     Args:
         job: Job configuration
     """
+    service = get_job_service()
+
     # Check for duplicate name
-    if any(j["name"] == job.name for j in _jobs.values()):
+    existing = service.list_schedules(job_type="pipeline")
+    if any(s.name == job.name for s in existing):
         raise HTTPException(status_code=400, detail=f"Job '{job.name}' already exists")
 
-    job_id = str(uuid.uuid4())
-    now = datetime.utcnow()
+    # Prepare config with notifications
+    config = job.config or {}
+    config["notifications"] = job.notifications or {}
+    config["success_count"] = 0
+    config["failure_count"] = 0
 
-    job_data = {
-        "id": job_id,
-        "name": job.name,
-        "pipeline_id": job.pipeline_id,
-        "pipeline_name": f"Pipeline-{job.pipeline_id[:8]}",  # In production, lookup actual name
-        "schedule": job.schedule,
-        "enabled": job.enabled,
-        "config": job.config,
-        "notifications": job.notifications,
-        "status": JobStatus.SCHEDULED if job.enabled else JobStatus.PAUSED,
-        "last_run": None,
-        "next_run": _parse_cron(job.schedule) if job.enabled else None,
-        "run_count": 0,
-        "success_count": 0,
-        "failure_count": 0,
-        "created_at": now,
-    }
+    schedule = service.create_schedule(
+        name=job.name,
+        job_type="pipeline",
+        target_id=job.pipeline_id,
+        schedule_type="cron",
+        schedule_value=job.schedule,
+        enabled=job.enabled,
+        config=config,
+    )
 
-    _jobs[job_id] = job_data
-    _job_runs[job_id] = []
-
-    return JobResponse(**job_data)
+    return JobResponse(**_schedule_to_db(schedule))
 
 
 @router.get("/{job_id}", response_model=JobResponse)
@@ -120,10 +150,13 @@ async def get_job(job_id: str):
     Args:
         job_id: Job ID
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    return JobResponse(**_jobs[job_id])
+    return JobResponse(**_schedule_to_db(schedule))
 
 
 @router.put("/{job_id}", response_model=JobResponse)
@@ -135,26 +168,30 @@ async def update_job(job_id: str, job: JobCreate):
         job_id: Job ID
         job: New configuration
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    existing = service.get_schedule(job_id)
+
+    if not existing:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    existing = _jobs[job_id]
+    # Prepare config with notifications
+    config = job.config or {}
+    config["notifications"] = job.notifications or {}
+    # Preserve counts
+    old_config = existing.config or {}
+    config["success_count"] = old_config.get("success_count", 0)
+    config["failure_count"] = old_config.get("failure_count", 0)
 
-    existing["name"] = job.name
-    existing["pipeline_id"] = job.pipeline_id
-    existing["schedule"] = job.schedule
-    existing["enabled"] = job.enabled
-    existing["config"] = job.config
-    existing["notifications"] = job.notifications
+    schedule = service.update_schedule(
+        schedule_id=job_id,
+        name=job.name,
+        target_id=job.pipeline_id,
+        schedule_value=job.schedule,
+        enabled=job.enabled,
+        config=config,
+    )
 
-    if job.enabled:
-        existing["status"] = JobStatus.SCHEDULED
-        existing["next_run"] = _parse_cron(job.schedule)
-    else:
-        existing["status"] = JobStatus.PAUSED
-        existing["next_run"] = None
-
-    return JobResponse(**existing)
+    return JobResponse(**_schedule_to_db(schedule))
 
 
 @router.delete("/{job_id}", response_model=BaseResponse)
@@ -165,13 +202,14 @@ async def delete_job(job_id: str):
     Args:
         job_id: Job ID
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    name = _jobs[job_id]["name"]
-    del _jobs[job_id]
-    if job_id in _job_runs:
-        del _job_runs[job_id]
+    name = schedule.name
+    service.delete_schedule(job_id)
 
     return BaseResponse(success=True, message=f"Job '{name}' deleted")
 
@@ -184,34 +222,35 @@ async def trigger_job(job_id: str):
     Args:
         job_id: Job ID
     """
-    if job_id not in _jobs:
+    from automic_etl.notifications import get_notification_event_service
+
+    service = get_job_service()
+    notification_service = get_notification_event_service()
+
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job = _jobs[job_id]
     now = datetime.utcnow()
 
-    run_id = str(uuid.uuid4())
-    run_data = {
-        "run_id": run_id,
-        "job_id": job_id,
-        "job_name": job["name"],
-        "status": JobStatus.RUNNING,
-        "started_at": now,
-        "completed_at": None,
-        "duration_seconds": None,
-        "metrics": {},
-        "logs": [
-            f"[{now.isoformat()}] Job triggered manually",
-            f"[{now.isoformat()}] Starting pipeline execution...",
-        ],
-        "error": None,
-    }
+    # Create a new run
+    run = service.create_run(
+        schedule_id=job_id,
+        triggered_by="manual",
+    )
 
-    _job_runs[job_id].insert(0, run_data)
-    job["status"] = JobStatus.RUNNING
-    job["run_count"] += 1
+    # Add initial logs
+    logs = [
+        f"[{now.isoformat()}] Job triggered manually",
+        f"[{now.isoformat()}] Starting pipeline execution...",
+    ]
+    service.update_run(run.id, logs=logs)
 
-    return JobRunResponse(**run_data)
+    # Emit job started notification
+    notification_service.job_started(schedule.name, job_id)
+
+    return JobRunResponse(**_run_to_dict(run, schedule.name))
 
 
 @router.post("/{job_id}/pause", response_model=JobResponse)
@@ -222,15 +261,15 @@ async def pause_job(job_id: str):
     Args:
         job_id: Job ID
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job = _jobs[job_id]
-    job["enabled"] = False
-    job["status"] = JobStatus.PAUSED
-    job["next_run"] = None
+    schedule = service.update_schedule(schedule_id=job_id, enabled=False)
 
-    return JobResponse(**job)
+    return JobResponse(**_schedule_to_db(schedule))
 
 
 @router.post("/{job_id}/resume", response_model=JobResponse)
@@ -241,15 +280,15 @@ async def resume_job(job_id: str):
     Args:
         job_id: Job ID
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job = _jobs[job_id]
-    job["enabled"] = True
-    job["status"] = JobStatus.SCHEDULED
-    job["next_run"] = _parse_cron(job["schedule"])
+    schedule = service.update_schedule(schedule_id=job_id, enabled=True)
 
-    return JobResponse(**job)
+    return JobResponse(**_schedule_to_db(schedule))
 
 
 @router.get("/{job_id}/runs", response_model=PaginatedResponse)
@@ -268,13 +307,14 @@ async def list_job_runs(
         page_size: Items per page
         status: Filter by status
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    runs = _job_runs.get(job_id, [])
-
-    if status:
-        runs = [r for r in runs if r["status"] == status]
+    db_runs = service.get_runs(schedule_id=job_id, status=status.value if status else None)
+    runs = [_run_to_dict(r, schedule.name) for r in db_runs]
 
     # Paginate
     total = len(runs)
@@ -299,13 +339,16 @@ async def get_job_run(job_id: str, run_id: str):
         job_id: Job ID
         run_id: Run ID
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    runs = _job_runs.get(job_id, [])
+    runs = service.get_runs(schedule_id=job_id)
     for run in runs:
-        if run["run_id"] == run_id:
-            return JobRunResponse(**run)
+        if run.id == run_id:
+            return JobRunResponse(**_run_to_dict(run, schedule.name))
 
     raise HTTPException(status_code=404, detail="Job run not found")
 
@@ -324,13 +367,16 @@ async def get_job_run_logs(
         run_id: Run ID
         tail: Number of log lines to return
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    runs = _job_runs.get(job_id, [])
+    runs = service.get_runs(schedule_id=job_id)
     for run in runs:
-        if run["run_id"] == run_id:
-            logs = run.get("logs", [])
+        if run.id == run_id:
+            logs = run.logs or []
             return {
                 "run_id": run_id,
                 "logs": logs[-tail:],
@@ -349,23 +395,33 @@ async def cancel_job_run(job_id: str, run_id: str):
         job_id: Job ID
         run_id: Run ID
     """
-    if job_id not in _jobs:
+    service = get_job_service()
+    schedule = service.get_schedule(job_id)
+
+    if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    runs = _job_runs.get(job_id, [])
+    runs = service.get_runs(schedule_id=job_id)
     for run in runs:
-        if run["run_id"] == run_id:
-            if run["status"] != JobStatus.RUNNING:
+        if run.id == run_id:
+            if run.status != "running":
                 raise HTTPException(status_code=400, detail="Job run is not running")
 
-            run["status"] = JobStatus.FAILED
-            run["completed_at"] = datetime.utcnow()
-            run["error"] = "Cancelled by user"
-            run["logs"].append(f"[{datetime.utcnow().isoformat()}] Job cancelled by user")
+            now = datetime.utcnow()
+            logs = run.logs or []
+            logs.append(f"[{now.isoformat()}] Job cancelled by user")
 
-            # Update job stats
-            _jobs[job_id]["status"] = JobStatus.SCHEDULED
-            _jobs[job_id]["failure_count"] += 1
+            service.update_run(
+                run_id=run_id,
+                status="failed",
+                error_message="Cancelled by user",
+                logs=logs,
+            )
+
+            # Update failure count in config
+            config = schedule.config or {}
+            config["failure_count"] = config.get("failure_count", 0) + 1
+            service.update_schedule(schedule_id=job_id, config=config)
 
             return BaseResponse(success=True, message="Job run cancelled")
 
@@ -375,13 +431,29 @@ async def cancel_job_run(job_id: str, run_id: str):
 @router.get("/stats/summary")
 async def get_job_stats():
     """Get summary statistics for all jobs."""
-    total_jobs = len(_jobs)
-    enabled_jobs = sum(1 for j in _jobs.values() if j["enabled"])
-    running_jobs = sum(1 for j in _jobs.values() if j["status"] == JobStatus.RUNNING)
+    service = get_job_service()
+    schedules = service.list_schedules(job_type="pipeline")
 
-    total_runs = sum(len(runs) for runs in _job_runs.values())
-    successful_runs = sum(j["success_count"] for j in _jobs.values())
-    failed_runs = sum(j["failure_count"] for j in _jobs.values())
+    total_jobs = len(schedules)
+    enabled_jobs = sum(1 for s in schedules if s.enabled)
+
+    # Get all runs for stats
+    total_runs = 0
+    successful_runs = 0
+    failed_runs = 0
+    running_jobs = 0
+
+    for schedule in schedules:
+        runs = service.get_runs(schedule_id=schedule.id)
+        total_runs += len(runs)
+
+        for run in runs:
+            if run.status == "completed":
+                successful_runs += 1
+            elif run.status == "failed":
+                failed_runs += 1
+            elif run.status == "running":
+                running_jobs += 1
 
     return {
         "total_jobs": total_jobs,

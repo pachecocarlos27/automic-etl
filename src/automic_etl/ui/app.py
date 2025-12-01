@@ -23,11 +23,16 @@ NAV_ITEMS = [
     NavItem("home", "Home", "🏠"),
     NavItem("ingestion", "Data Ingestion", "📥"),
     NavItem("pipelines", "Pipeline Builder", "🔧"),
+    NavItem("jobs", "Jobs & Orchestration", "📅"),
     NavItem("profiling", "Data Profiling", "📊"),
+    NavItem("validation", "Data Validation", "✅"),
     NavItem("lineage", "Data Lineage", "🌳"),
     NavItem("query", "Query Studio", "💬"),
+    NavItem("ai_services", "AI Services", "🤖"),
     NavItem("monitoring", "Monitoring", "📈"),
+    NavItem("alerts", "Alerts", "🔔"),
     NavItem("connectors", "Connectors", "🔌"),
+    NavItem("integrations", "Integrations", "🔗"),
     NavItem("settings", "Settings", "⚙️"),
 ]
 
@@ -143,7 +148,6 @@ def get_page_function(page_key: str) -> Callable | None:
     """Get the page function for a given page key."""
     page_map = {
         "home": show_home_page,
-        "connectors": show_connectors_page,
     }
 
     # Try to get from map first
@@ -158,18 +162,36 @@ def get_page_function(page_key: str) -> Callable | None:
         elif page_key == "pipelines":
             from automic_etl.ui.pages.pipeline_builder import show_pipeline_builder_page
             return show_pipeline_builder_page
+        elif page_key == "jobs":
+            from automic_etl.ui.pages.jobs import show_jobs_page
+            return show_jobs_page
         elif page_key == "profiling":
             from automic_etl.ui.pages.data_profiling import show_data_profiling_page
             return show_data_profiling_page
+        elif page_key == "validation":
+            from automic_etl.ui.pages.validation import show_validation_page
+            return show_validation_page
         elif page_key == "lineage":
             from automic_etl.ui.pages.lineage import show_lineage_page
             return show_lineage_page
         elif page_key == "query":
             from automic_etl.ui.pages.query_studio import show_query_studio_page
             return show_query_studio_page
+        elif page_key == "ai_services":
+            from automic_etl.ui.pages.ai_services import show_ai_services_page
+            return show_ai_services_page
         elif page_key == "monitoring":
             from automic_etl.ui.pages.monitoring import show_monitoring_page
             return show_monitoring_page
+        elif page_key == "alerts":
+            from automic_etl.ui.pages.alerts import show_alerts_page
+            return show_alerts_page
+        elif page_key == "connectors":
+            from automic_etl.ui.pages.connectors_mgmt import show_connectors_management_page
+            return show_connectors_management_page
+        elif page_key == "integrations":
+            from automic_etl.ui.pages.integrations import show_integrations_page
+            return show_integrations_page
         elif page_key == "settings":
             from automic_etl.ui.pages.settings import show_settings_page
             return show_settings_page

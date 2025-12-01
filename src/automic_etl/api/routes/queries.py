@@ -31,6 +31,90 @@ _query_history: dict[str, list[dict]] = {}  # company_id -> queries
 _query_cache: dict[str, dict] = {}
 _conversations: dict[str, dict] = {}  # conversation_id -> context
 
+# Per-company LLM rate limiters
+_llm_rate_limiters: dict[str, dict] = {}  # company_id -> rate limit state
+
+
+def _check_llm_rate_limit(company_id: str, user_id: str) -> tuple[bool, str | None]:
+    """
+    Check if company/user is within LLM rate limits.
+
+    Rate limits:
+    - 100 queries per minute per company
+    - 20 queries per minute per user
+    - 1000 queries per day per company
+
+    Returns:
+        Tuple of (allowed, reason if not allowed)
+    """
+    from datetime import timedelta
+
+    now = datetime.utcnow()
+    minute_ago = now - timedelta(minutes=1)
+    day_ago = now - timedelta(days=1)
+
+    # Initialize rate limiter for company if needed
+    if company_id not in _llm_rate_limiters:
+        _llm_rate_limiters[company_id] = {
+            "company_requests": [],
+            "user_requests": {},
+        }
+
+    limiter = _llm_rate_limiters[company_id]
+
+    # Clean old entries
+    limiter["company_requests"] = [
+        t for t in limiter["company_requests"] if t > minute_ago
+    ]
+
+    # Clean old day entries for daily limit
+    day_requests = [t for t in limiter.get("day_requests", []) if t > day_ago]
+    limiter["day_requests"] = day_requests
+
+    # Clean user requests
+    if user_id not in limiter["user_requests"]:
+        limiter["user_requests"][user_id] = []
+    limiter["user_requests"][user_id] = [
+        t for t in limiter["user_requests"][user_id] if t > minute_ago
+    ]
+
+    # Check company minute limit (100/min)
+    if len(limiter["company_requests"]) >= 100:
+        return False, "Company rate limit exceeded: 100 queries per minute"
+
+    # Check user minute limit (20/min)
+    if len(limiter["user_requests"][user_id]) >= 20:
+        return False, "User rate limit exceeded: 20 queries per minute"
+
+    # Check company daily limit (1000/day)
+    if len(limiter.get("day_requests", [])) >= 1000:
+        return False, "Company daily limit exceeded: 1000 queries per day"
+
+    return True, None
+
+
+def _record_llm_request(company_id: str, user_id: str):
+    """Record an LLM request for rate limiting."""
+    now = datetime.utcnow()
+
+    if company_id not in _llm_rate_limiters:
+        _llm_rate_limiters[company_id] = {
+            "company_requests": [],
+            "user_requests": {},
+            "day_requests": [],
+        }
+
+    limiter = _llm_rate_limiters[company_id]
+    limiter["company_requests"].append(now)
+
+    if "day_requests" not in limiter:
+        limiter["day_requests"] = []
+    limiter["day_requests"].append(now)
+
+    if user_id not in limiter["user_requests"]:
+        limiter["user_requests"][user_id] = []
+    limiter["user_requests"][user_id].append(now)
+
 
 # Pydantic models for new endpoints
 class NaturalLanguageRequest(BaseModel):
@@ -522,6 +606,18 @@ async def execute_natural_language_query(
     company_id = ctx.tenant.company_id
     user_id = ctx.user.user_id
 
+    # Check LLM rate limits
+    allowed, reason = _check_llm_rate_limit(company_id, user_id)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=reason,
+            headers={"Retry-After": "60"},
+        )
+
+    # Record the request
+    _record_llm_request(company_id, user_id)
+
     # Get or create conversation
     conversation_id = request.conversation_id or str(uuid.uuid4())
     if conversation_id not in _conversations:
@@ -822,6 +918,64 @@ async def autocomplete_query(
         ]
 
     return AutocompleteResponse(completions=completions[:5])
+
+
+@router.get("/rate-limit-status")
+async def get_rate_limit_status(
+    ctx: SecurityContext = Depends(require_permission(PermissionType.QUERY_EXECUTE)),
+):
+    """
+    Get current LLM rate limit status for the user and company.
+
+    Returns current usage and remaining limits.
+    """
+    from datetime import timedelta
+
+    company_id = ctx.tenant.company_id
+    user_id = ctx.user.user_id
+    now = datetime.utcnow()
+    minute_ago = now - timedelta(minutes=1)
+    day_ago = now - timedelta(days=1)
+
+    if company_id not in _llm_rate_limiters:
+        return {
+            "company": {
+                "requests_per_minute": 0,
+                "requests_per_minute_limit": 100,
+                "requests_per_day": 0,
+                "requests_per_day_limit": 1000,
+            },
+            "user": {
+                "requests_per_minute": 0,
+                "requests_per_minute_limit": 20,
+            },
+        }
+
+    limiter = _llm_rate_limiters[company_id]
+
+    # Count recent requests
+    company_minute = len([t for t in limiter.get("company_requests", []) if t > minute_ago])
+    company_day = len([t for t in limiter.get("day_requests", []) if t > day_ago])
+    user_minute = len([
+        t for t in limiter.get("user_requests", {}).get(user_id, [])
+        if t > minute_ago
+    ])
+
+    return {
+        "company": {
+            "requests_per_minute": company_minute,
+            "requests_per_minute_limit": 100,
+            "remaining_per_minute": max(0, 100 - company_minute),
+            "requests_per_day": company_day,
+            "requests_per_day_limit": 1000,
+            "remaining_per_day": max(0, 1000 - company_day),
+        },
+        "user": {
+            "requests_per_minute": user_minute,
+            "requests_per_minute_limit": 20,
+            "remaining_per_minute": max(0, 20 - user_minute),
+        },
+    }
 
 
 @router.get("/schemas")

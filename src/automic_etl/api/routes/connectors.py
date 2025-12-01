@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -28,11 +27,10 @@ from automic_etl.auth.security import (
     ResourceType,
     AccessLevel,
 )
+from automic_etl.db.connector_service import get_connector_service
+from automic_etl.db.models import ConnectorConfigModel
 
 router = APIRouter()
-
-# In-memory storage
-_connectors: dict[str, dict] = {}
 
 
 # Supported connector types
@@ -69,6 +67,24 @@ CONNECTOR_TYPES = {
 }
 
 
+def _connector_to_dict(connector: ConnectorConfigModel) -> dict:
+    """Convert database model to API response format."""
+    return {
+        "id": connector.id,
+        "company_id": connector.created_by,  # Use created_by for tenant tracking
+        "created_by": connector.created_by,
+        "type": connector.category,
+        "subtype": connector.connector_type,
+        "name": connector.name,
+        "description": connector.metadata_.get("description", "") if connector.metadata_ else "",
+        "connection_params": connector.config or {},
+        "enabled": connector.status != "disabled",
+        "status": connector.status or "disconnected",
+        "last_used": connector.last_tested_at,
+        "created_at": connector.created_at,
+    }
+
+
 @router.get("/types")
 async def list_connector_types():
     """
@@ -94,12 +110,20 @@ async def list_connectors(
         type: Filter by connector type
         enabled: Filter by enabled status
     """
-    # Filter by company (multi-tenant isolation)
-    connectors = filter_by_company(ctx, list(_connectors.values()))
+    service = get_connector_service()
 
-    # Apply filters
-    if type:
-        connectors = [c for c in connectors if c["type"] == type]
+    # Get connectors from database
+    db_connectors = service.list_connectors(
+        category=type.value if type else None,
+    )
+
+    # Convert to response format
+    connectors = [_connector_to_dict(c) for c in db_connectors]
+
+    # Filter by company (multi-tenant isolation)
+    connectors = filter_by_company(ctx, connectors)
+
+    # Apply enabled filter
     if enabled is not None:
         connectors = [c for c in connectors if c["enabled"] == enabled]
 
@@ -136,31 +160,24 @@ async def create_connector(
             detail=f"Invalid subtype '{config.subtype}' for type '{config.type}'"
         )
 
+    service = get_connector_service()
+
     # Check for duplicate name within company
-    company_connectors = filter_by_company(ctx, list(_connectors.values()))
-    if any(c["name"] == config.name for c in company_connectors):
+    existing = service.list_connectors()
+    company_connectors = [c for c in existing if c.created_by == ctx.user.user_id]
+    if any(c.name == config.name for c in company_connectors):
         raise HTTPException(status_code=400, detail=f"Connector '{config.name}' already exists")
 
-    connector_id = str(uuid.uuid4())
-    now = datetime.utcnow()
+    connector = service.create_connector(
+        name=config.name,
+        connector_type=config.subtype,
+        category=config.type.value,
+        config=config.connection_params,
+        created_by=ctx.user.user_id,
+        metadata={"description": config.description or ""},
+    )
 
-    connector_data = {
-        "id": connector_id,
-        "company_id": ctx.tenant.company_id,  # Multi-tenant: associate with company
-        "created_by": ctx.user.user_id,
-        "type": config.type,
-        "subtype": config.subtype,
-        "name": config.name,
-        "description": config.description,
-        "connection_params": config.connection_params,
-        "enabled": config.enabled,
-        "status": "disconnected",
-        "last_used": None,
-        "created_at": now,
-    }
-
-    _connectors[connector_id] = connector_data
-    return ConnectorResponse(**connector_data)
+    return ConnectorResponse(**_connector_to_dict(connector))
 
 
 @router.get("/{connector_id}", response_model=ConnectorResponse)
@@ -174,18 +191,21 @@ async def get_connector(
     Args:
         connector_id: Connector ID
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.READ
+        connector_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    return ConnectorResponse(**connector)
+    return ConnectorResponse(**connector_dict)
 
 
 @router.put("/{connector_id}", response_model=ConnectorResponse)
@@ -201,24 +221,34 @@ async def update_connector(
         connector_id: Connector ID
         config: New configuration
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.WRITE
+        connector_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
     # Update fields
-    connector["name"] = config.name
-    connector["description"] = config.description
-    connector["connection_params"] = config.connection_params
-    connector["enabled"] = config.enabled
+    updated = service.update_connector(
+        connector_id=connector_id,
+        name=config.name,
+        config=config.connection_params,
+        metadata={"description": config.description or ""},
+    )
 
-    return ConnectorResponse(**connector)
+    if config.enabled:
+        service.update_connector(connector_id=connector_id, status="disconnected")
+    else:
+        service.update_connector(connector_id=connector_id, status="disabled")
+
+    return ConnectorResponse(**_connector_to_dict(updated))
 
 
 @router.delete("/{connector_id}", response_model=BaseResponse)
@@ -232,19 +262,22 @@ async def delete_connector(
     Args:
         connector_id: Connector ID
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access with ADMIN level for delete
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.ADMIN
+        connector_dict.get("company_id", ""), AccessLevel.ADMIN
     )
 
-    name = connector["name"]
-    del _connectors[connector_id]
+    name = connector.name
+    service.delete_connector(connector_id)
 
     return BaseResponse(success=True, message=f"Connector '{name}' deleted")
 
@@ -260,20 +293,22 @@ async def test_connector(
     Args:
         connector_id: Connector ID
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.READ
+        connector_dict.get("company_id", ""), AccessLevel.READ
     )
 
     # In production, this would actually test the connection
     # For demo, simulate a test
-
     import random
     import time
 
@@ -283,18 +318,18 @@ async def test_connector(
     latency = (time.time() - start) * 1000 + random.uniform(10, 100)
 
     if success:
-        connector["status"] = "connected"
+        service.update_test_status(connector_id, "connected")
         return ConnectorTestResult(
             success=True,
-            message=f"Successfully connected to {connector['subtype']}",
+            message=f"Successfully connected to {connector.connector_type}",
             latency_ms=latency,
             details={
-                "version": "14.2" if connector["subtype"] == "postgres" else "1.0",
+                "version": "14.2" if connector.connector_type == "postgres" else "1.0",
                 "connection_pool_size": 10,
             }
         )
     else:
-        connector["status"] = "error"
+        service.update_test_status(connector_id, "error")
         return ConnectorTestResult(
             success=False,
             message="Connection failed: timeout after 30 seconds",
@@ -314,19 +349,22 @@ async def enable_connector(
     Args:
         connector_id: Connector ID
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.WRITE
+        connector_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
-    connector["enabled"] = True
-    return ConnectorResponse(**connector)
+    updated = service.update_connector(connector_id=connector_id, status="disconnected")
+    return ConnectorResponse(**_connector_to_dict(updated))
 
 
 @router.post("/{connector_id}/disable", response_model=ConnectorResponse)
@@ -340,20 +378,22 @@ async def disable_connector(
     Args:
         connector_id: Connector ID
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access with WRITE level
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.WRITE
+        connector_dict.get("company_id", ""), AccessLevel.WRITE
     )
 
-    connector["enabled"] = False
-    connector["status"] = "disconnected"
-    return ConnectorResponse(**connector)
+    updated = service.update_connector(connector_id=connector_id, status="disabled")
+    return ConnectorResponse(**_connector_to_dict(updated))
 
 
 @router.get("/{connector_id}/schema")
@@ -367,21 +407,25 @@ async def get_connector_schema(
     Args:
         connector_id: Connector ID
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.READ
+        connector_dict.get("company_id", ""), AccessLevel.READ
     )
 
     # In production, this would fetch actual schema
     # For demo, return sample schema based on type
+    category = connector.category
 
-    if connector["type"] == ConnectorType.DATABASE:
+    if category == "database":
         return {
             "databases": ["main", "analytics"],
             "schemas": {
@@ -394,7 +438,7 @@ async def get_connector_schema(
                 {"schema": "public", "name": "products", "row_count": 500},
             ]
         }
-    elif connector["type"] == ConnectorType.API:
+    elif category == "api":
         return {
             "endpoints": [
                 {"path": "/users", "methods": ["GET", "POST"]},
@@ -403,15 +447,16 @@ async def get_connector_schema(
             ],
             "rate_limit": "100 requests/minute",
         }
-    elif connector["type"] == ConnectorType.STREAMING:
+    elif category == "streaming":
         return {
             "topics": ["events", "logs", "metrics"],
             "partitions": 12,
             "consumer_groups": ["automic-etl", "analytics"],
         }
-    elif connector["type"] == ConnectorType.CLOUD_STORAGE:
+    elif category == "cloud_storage":
+        config = connector.config or {}
         return {
-            "buckets": [connector["connection_params"].get("bucket", "data-bucket")],
+            "buckets": [config.get("bucket", "data-bucket")],
             "prefixes": ["raw/", "processed/", "archive/"],
             "file_count": 1523,
             "total_size_gb": 45.6,
@@ -437,23 +482,27 @@ async def preview_connector_data(
         path: File path (for file/storage connectors)
         limit: Number of rows to preview
     """
-    if connector_id not in _connectors:
+    service = get_connector_service()
+    connector = service.get_connector(connector_id)
+
+    if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
 
-    connector = _connectors[connector_id]
+    connector_dict = _connector_to_dict(connector)
 
     # Check tenant access
     check_resource_access(
         ctx, ResourceType.CONNECTOR, connector_id,
-        connector.get("company_id", ""), AccessLevel.READ
+        connector_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    connector["last_used"] = datetime.utcnow()
+    # Update last used time
+    service.update_test_status(connector_id, connector.status or "connected")
 
     # Return sample preview data
     return {
         "connector_id": connector_id,
-        "connector_name": connector["name"],
+        "connector_name": connector.name,
         "source": table or path or "default",
         "columns": ["id", "name", "value", "timestamp"],
         "data": [

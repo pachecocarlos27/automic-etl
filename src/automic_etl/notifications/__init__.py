@@ -13,6 +13,11 @@ from automic_etl.notifications.channels import (
     TeamsNotifier,
 )
 from automic_etl.notifications.alerts import AlertManager, Alert, AlertRule
+from automic_etl.notifications.event_service import (
+    NotificationEventService,
+    EventType,
+    get_notification_event_service,
+)
 
 __all__ = [
     "Notifier",
@@ -26,4 +31,7 @@ __all__ = [
     "AlertManager",
     "Alert",
     "AlertRule",
+    "NotificationEventService",
+    "EventType",
+    "get_notification_event_service",
 ]
