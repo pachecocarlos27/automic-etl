@@ -16,8 +16,8 @@ showSidebarNavigation = false
 
 [theme]
 base = "light"
-primaryColor = "#2563EB"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F9FAFB"
-textColor = "#111827"
+primaryColor = "#3F51B5"
+backgroundColor = "#FAFAFA"
+secondaryBackgroundColor = "#F5F5F5"
+textColor = "#212121"
 font = "sans serif"
