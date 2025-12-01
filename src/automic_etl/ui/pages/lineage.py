@@ -775,3 +775,7 @@ def _show_pipeline_impact_analysis() -> None:
         2. Compare output counts before/after
         3. Validate data quality metrics
         """)
+
+
+# Run page when loaded by Streamlit
+show_lineage_page()

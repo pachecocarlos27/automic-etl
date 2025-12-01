@@ -1253,3 +1253,7 @@ def show_query_history():
 def show_generated_query(question: str):
     """Show the generated SQL query - legacy function for compatibility."""
     _generate_sql_from_nl(question)
+
+
+# Run page when loaded by Streamlit
+show_query_studio_page()

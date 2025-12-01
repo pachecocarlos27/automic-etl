@@ -473,3 +473,7 @@ def show_statistics_results():
         - Investigate the 23 revenue outliers for data quality issues
         - Implement retention strategies for customers approaching 90-day mark
         """)
+
+
+# Run page when loaded by Streamlit
+show_data_profiling_page()

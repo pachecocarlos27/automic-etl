@@ -420,3 +420,7 @@ def render_usage_section(company: dict):
 def show_company_admin():
     """Entry point for company admin page."""
     render_company_admin_page()
+
+
+# Run page when loaded by Streamlit
+render_company_admin_page()

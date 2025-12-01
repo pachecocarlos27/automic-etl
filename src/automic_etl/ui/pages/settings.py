@@ -391,3 +391,7 @@ def show_general_settings():
         uploaded_config = st.file_uploader("Import Configuration", type=["yaml", "yml"])
         if uploaded_config:
             st.success("Configuration imported!")
+
+
+# Run page when loaded by Streamlit
+show_settings_page()

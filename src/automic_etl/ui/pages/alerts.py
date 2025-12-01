@@ -553,3 +553,7 @@ def _show_alert_history():
             data="alert_history_data",
             file_name=f"alert_history_{datetime.now().strftime('%Y%m%d')}.csv",
         )
+
+
+# Run page when loaded by Streamlit
+show_alerts_page()

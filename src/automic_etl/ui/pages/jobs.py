@@ -490,3 +490,7 @@ def _show_execution_history():
     col1, col2, col3 = st.columns([2, 1, 2])
     with col2:
         st.markdown("Page 1 of 10")
+
+
+# Run page when loaded by Streamlit
+show_jobs_page()

@@ -577,3 +577,7 @@ def _show_cloud_storage_connectors():
                 st.button("Browse", key=f"browse_storage_{storage['name']}")
 
             st.markdown("---")
+
+
+# Run page when loaded by Streamlit
+show_connectors_management_page()

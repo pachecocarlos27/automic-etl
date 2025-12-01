@@ -384,3 +384,7 @@ def show_run_history():
                 st.error(f"Error: {run.error_message}")
 
             st.markdown("---")
+
+
+# Run page when loaded by Streamlit
+show_pipeline_builder_page()
