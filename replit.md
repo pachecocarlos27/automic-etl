@@ -4,6 +4,10 @@
 **Automic ETL** is an AI-augmented ETL tool for building data lakehouses with medallion architecture (Bronze/Silver/Gold). It features LLM integration for intelligent data processing, supports multiple cloud storage providers, and includes both a Streamlit web UI and FastAPI backend.
 
 ## Recent Changes
+- **2025-12-01**: Fixed page routing and navigation
+  - Disabled Streamlit's automatic multi-page navigation (conflicts with custom navigation)
+  - Added missing page routes for company_admin and superadmin in app.py
+  - Pages now correctly render when accessed via custom navigation
 - **2025-11-30**: Full database-backed functionality implemented
   - **Authentication System**:
     - AuthService with bcrypt password hashing
