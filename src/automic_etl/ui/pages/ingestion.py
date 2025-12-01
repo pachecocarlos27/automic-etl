@@ -12,11 +12,11 @@ from automic_etl.db.data_service import get_data_service
 
 
 def show_ingestion_page():
-    """Display the data ingestion page."""
+    """Display the data ingestion page with Material Design."""
     st.markdown("""
-    <div style="margin-bottom: 1.5rem;">
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem; letter-spacing: -0.025em;">Data Ingestion</h1>
-        <p style="font-size: 0.9375rem; color: #6B7280; margin: 0;">Upload files or connect to data sources</p>
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">Data Ingestion</h1>
+        <p style="font-size: 1rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Upload files or connect to data sources</p>
     </div>
     """, unsafe_allow_html=True)
 

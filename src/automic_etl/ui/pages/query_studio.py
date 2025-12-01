@@ -128,9 +128,9 @@ def _sanitize_input(text: str) -> str:
 def show_query_studio_page():
     """Display the query studio page with LLM-powered SQL interface."""
     st.markdown("""
-    <div style="margin-bottom: 1.5rem;">
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem; letter-spacing: -0.025em;">Query Studio</h1>
-        <p style="font-size: 0.9375rem; color: #6B7280; margin: 0;">Query data using natural language or SQL</p>
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">Query Studio</h1>
+        <p style="font-size: 1rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Query data using natural language or SQL</p>
     </div>
     """, unsafe_allow_html=True)
 

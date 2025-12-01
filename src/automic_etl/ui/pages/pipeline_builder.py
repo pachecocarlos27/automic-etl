@@ -10,11 +10,11 @@ from automic_etl.db.pipeline_service import get_pipeline_service
 
 
 def show_pipeline_builder_page():
-    """Display the pipeline builder page."""
+    """Display the pipeline builder page with Material Design."""
     st.markdown("""
-    <div style="margin-bottom: 1.5rem;">
-        <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem; letter-spacing: -0.025em;">Pipelines</h1>
-        <p style="font-size: 0.9375rem; color: #6B7280; margin: 0;">Create and manage ETL pipelines</p>
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">Pipelines</h1>
+        <p style="font-size: 1rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Create and manage ETL pipelines</p>
     </div>
     """, unsafe_allow_html=True)
 
