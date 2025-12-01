@@ -11,8 +11,12 @@ from automic_etl.db.pipeline_service import get_pipeline_service
 
 def show_pipeline_builder_page():
     """Display the pipeline builder page."""
-    st.title("Pipeline Builder")
-    st.markdown("Create and manage ETL pipelines with a visual interface.")
+    st.markdown("""
+    <div style="margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 0.25rem; letter-spacing: -0.025em;">Pipelines</h1>
+        <p style="font-size: 0.9375rem; color: #6B7280; margin: 0;">Create and manage ETL pipelines</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs(["Create Pipeline", "My Pipelines", "Run History"])
 

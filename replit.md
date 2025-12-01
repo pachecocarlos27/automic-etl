@@ -4,6 +4,13 @@
 **Automic ETL** is an AI-augmented ETL tool for building data lakehouses with medallion architecture (Bronze/Silver/Gold). It features LLM integration for intelligent data processing, supports multiple cloud storage providers, and includes both a Streamlit web UI and FastAPI backend.
 
 ## Recent Changes
+- **2025-12-01**: Minimal UI/UX Redesign
+  - **Design System**: Clean neutral palette with single blue accent (#2563EB)
+  - **Login Page**: Centered minimal card, clean tabs, hidden skip link
+  - **Home Dashboard**: Simplified metric cards using native Streamlit metrics, flat medallion layer cards with subtle left borders, clean activity feed
+  - **Sidebar**: Streamlined dark navigation with reduced visual weight
+  - **Page Headers**: Consistent minimal headers across all pages (ingestion, pipelines, monitoring, query studio)
+  - **Theme Colors**: Updated to white/gray surfaces (#FFFFFF/#F9FAFB), text (#111827/#6B7280), and primary blue (#2563EB)
 - **2025-12-01**: Fixed page routing and navigation
   - Disabled Streamlit's automatic multi-page navigation (conflicts with custom navigation)
   - Added missing page routes for company_admin and superadmin in app.py

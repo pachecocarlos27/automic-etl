@@ -53,75 +53,12 @@ def create_app():
 
 
 def apply_custom_css():
-    """Apply custom CSS styling using the theme system."""
+    """Apply custom CSS styling using the minimal theme system."""
     from automic_etl.ui.theme import get_streamlit_css, get_theme, ThemeMode
 
-    # Get user's theme preference from session state
     theme_mode = st.session_state.get("theme_mode", ThemeMode.LIGHT)
     theme = get_theme(theme_mode)
-
-    # Apply theme CSS
     st.markdown(get_streamlit_css(theme), unsafe_allow_html=True)
-
-    # Additional custom CSS
-    st.markdown("""
-    <style>
-    /* Main header styling */
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 0.5rem;
-    }
-    .sub-header {
-        font-size: 1.2rem;
-        color: var(--text-secondary);
-        margin-bottom: 2rem;
-    }
-
-    /* Cards and containers */
-    .metric-card {
-        background: linear-gradient(135deg, var(--surface), var(--background));
-        padding: 1.5rem;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border-light);
-        margin: 0.5rem 0;
-        box-shadow: var(--shadow-sm);
-    }
-    .info-card {
-        background: var(--background);
-        padding: 1.5rem;
-        border-radius: var(--radius-lg);
-        border-left: 4px solid var(--primary);
-        margin: 1rem 0;
-        box-shadow: var(--shadow-md);
-    }
-
-    /* User avatar */
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: var(--radius-full);
-        background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-inverse);
-        font-weight: bold;
-        font-size: 1.2rem;
-    }
-
-    /* Navigation highlight */
-    .nav-active {
-        background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-        color: var(--text-inverse);
-        border-radius: var(--radius-md);
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
 
 def init_app_state():
@@ -301,33 +238,26 @@ def run_app():
 
 
 def _render_sidebar_header():
-    """Render the sidebar header with branding."""
+    """Render minimal sidebar header."""
     st.markdown("""
-    <div style="text-align: center; padding: 1.5rem 1rem 1rem;">
-        <div style="
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%);
-            border-radius: 12px;
-            margin-bottom: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
-        ">
-            <span style="font-size: 1.5rem;">🔄</span>
+    <div style="padding: 1.25rem 1rem 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="
+                width: 36px;
+                height: 36px;
+                background: #2563EB;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">
+                <span style="font-size: 1.125rem;">⚡</span>
+            </div>
+            <div>
+                <div style="font-size: 1.125rem; font-weight: 700; color: white; letter-spacing: -0.02em;">Automic</div>
+                <div style="font-size: 0.6875rem; color: #6B7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">ETL Platform</div>
+            </div>
         </div>
-        <h1 style="
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            color: white;
-        ">
-            <span style="background: linear-gradient(135deg, #0066FF 0%, #00D4AA 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Automic</span>
-            <span style="color: white;"> ETL</span>
-        </h1>
-        <p style="color: rgba(255,255,255,0.6); font-size: 0.75rem; margin: 0.25rem 0 0; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">AI-Powered Data Platform</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -383,334 +313,112 @@ def _route_to_page(current_page: str, admin_func: Callable, profile_func: Callab
 
 
 def show_home_page():
-    """Display the home dashboard."""
-    from automic_etl.ui.widgets import (
-        dashboard_header,
-        metrics_row,
-        MetricData,
-        pipeline_status_widget,
-        activity_feed_widget,
-        data_quality_score_widget,
-        storage_breakdown_widget,
-        system_health_widget,
-    )
-    from datetime import datetime
-
+    """Display minimal home dashboard."""
     user = st.session_state.user
-
+    
     st.markdown(f"""
-    <div style="margin-bottom: 2rem;">
-        <h1 style="
-            font-size: 2.25rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            margin: 0 0 0.5rem;
-            color: #0F172A;
-        ">Welcome back, {user.first_name or user.username}</h1>
-        <p style="
-            font-size: 1rem;
-            color: #64748B;
-            margin: 0;
-        ">Here's what's happening with your data lakehouse today.</p>
+    <div style="margin-bottom: 2.5rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: #111827; margin: 0 0 0.375rem; letter-spacing: -0.025em;">
+            Welcome back, {user.first_name or user.username}
+        </h1>
+        <p style="font-size: 0.9375rem; color: #6B7280; margin: 0;">Your data lakehouse overview</p>
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    ">
-        <div style="
-            background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
-            border-radius: 16px;
-            padding: 1.5rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
-        ">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Tables</span>
-                <span style="font-size: 1.25rem;">📊</span>
-            </div>
-            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">12</div>
-            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">+2 new this week</div>
-        </div>
-        <div style="
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-            border-radius: 16px;
-            padding: 1.5rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-        ">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Pipelines</span>
-                <span style="font-size: 1.25rem;">🔧</span>
-            </div>
-            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">5</div>
-            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">1 currently running</div>
-        </div>
-        <div style="
-            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-            border-radius: 16px;
-            padding: 1.5rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
-        ">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Data Processed</span>
-                <span style="font-size: 1.25rem;">💾</span>
-            </div>
-            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">2.4 GB</div>
-            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">+450 MB today</div>
-        </div>
-        <div style="
-            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-            border-radius: 16px;
-            padding: 1.5rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
-        ">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">AI Queries</span>
-                <span style="font-size: 1.25rem;">🤖</span>
-            </div>
-            <div style="font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;">156</div>
-            <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem;">+23 today</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Main dashboard content
-    col_left, col_right = st.columns([2, 1])
-
-    with col_left:
-        st.markdown("""
-        <div style="margin-bottom: 1.5rem;">
-            <h2 style="font-size: 1.25rem; font-weight: 600; color: #0F172A; margin: 0 0 0.25rem;">Medallion Architecture</h2>
-            <p style="font-size: 0.875rem; color: #64748B; margin: 0;">Your data flows through Bronze, Silver, and Gold layers</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
-            <div style="
-                background: white;
-                border: 1px solid #E2E8F0;
-                border-radius: 16px;
-                padding: 1.25rem;
-                position: relative;
-                overflow: hidden;
-            ">
-                <div style="
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 4px;
-                    background: linear-gradient(90deg, #B45309 0%, #D97706 100%);
-                "></div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <span style="
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        width: 32px;
-                        height: 32px;
-                        background: linear-gradient(135deg, #B45309 0%, #D97706 100%);
-                        border-radius: 8px;
-                        font-size: 0.875rem;
-                    ">🥉</span>
-                    <span style="font-weight: 600; color: #0F172A;">Bronze Layer</span>
-                </div>
-                <p style="font-size: 0.75rem; color: #64748B; margin: 0 0 0.75rem;">Raw Data</p>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8;">
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Tables", "12", "+2")
+    with col2:
+        st.metric("Pipelines", "5", "1 active")
+    with col3:
+        st.metric("Data Size", "2.4 GB", "+450 MB")
+    with col4:
+        st.metric("AI Queries", "156", "+23 today")
+    
+    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
+    
+    col_main, col_side = st.columns([2, 1])
+    
+    with col_main:
+        st.markdown("#### Data Layers")
+        
+        layer_cols = st.columns(3)
+        
+        with layer_cols[0]:
+            st.markdown("""
+            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #A16207;">
+                <div style="font-weight: 600; color: #111827; margin-bottom: 0.5rem;">Bronze</div>
+                <div style="font-size: 0.8125rem; color: #6B7280; margin-bottom: 0.75rem;">Raw data</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9CA3AF;">
                     <span>8 tables</span>
                     <span>1.2 GB</span>
                 </div>
-                <div style="font-size: 0.7rem; color: #10B981; margin-top: 0.5rem;">Last: 2 min ago</div>
             </div>
-            <div style="
-                background: white;
-                border: 1px solid #E2E8F0;
-                border-radius: 16px;
-                padding: 1.25rem;
-                position: relative;
-                overflow: hidden;
-            ">
-                <div style="
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 4px;
-                    background: linear-gradient(90deg, #6B7280 0%, #9CA3AF 100%);
-                "></div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <span style="
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        width: 32px;
-                        height: 32px;
-                        background: linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%);
-                        border-radius: 8px;
-                        font-size: 0.875rem;
-                    ">🥈</span>
-                    <span style="font-weight: 600; color: #0F172A;">Silver Layer</span>
-                </div>
-                <p style="font-size: 0.75rem; color: #64748B; margin: 0 0 0.75rem;">Cleaned & Validated</p>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8;">
+            """, unsafe_allow_html=True)
+        
+        with layer_cols[1]:
+            st.markdown("""
+            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #64748B;">
+                <div style="font-weight: 600; color: #111827; margin-bottom: 0.5rem;">Silver</div>
+                <div style="font-size: 0.8125rem; color: #6B7280; margin-bottom: 0.75rem;">Cleaned</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9CA3AF;">
                     <span>6 tables</span>
                     <span>890 MB</span>
                 </div>
-                <div style="font-size: 0.7rem; color: #10B981; margin-top: 0.5rem;">Last: 5 min ago</div>
             </div>
-            <div style="
-                background: white;
-                border: 1px solid #E2E8F0;
-                border-radius: 16px;
-                padding: 1.25rem;
-                position: relative;
-                overflow: hidden;
-            ">
-                <div style="
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 4px;
-                    background: linear-gradient(90deg, #D97706 0%, #F59E0B 100%);
-                "></div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <span style="
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        width: 32px;
-                        height: 32px;
-                        background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
-                        border-radius: 8px;
-                        font-size: 0.875rem;
-                    ">🥇</span>
-                    <span style="font-weight: 600; color: #0F172A;">Gold Layer</span>
-                </div>
-                <p style="font-size: 0.75rem; color: #64748B; margin: 0 0 0.75rem;">Aggregated & Enriched</p>
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8;">
+            """, unsafe_allow_html=True)
+        
+        with layer_cols[2]:
+            st.markdown("""
+            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #CA8A04;">
+                <div style="font-weight: 600; color: #111827; margin-bottom: 0.5rem;">Gold</div>
+                <div style="font-size: 0.8125rem; color: #6B7280; margin-bottom: 0.75rem;">Enriched</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9CA3AF;">
                     <span>4 tables</span>
                     <span>320 MB</span>
                 </div>
-                <div style="font-size: 0.7rem; color: #10B981; margin-top: 0.5rem;">Last: 1 hr ago</div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Recent Activity
-        activity_data = [
-            {"action": "create", "user": "System", "timestamp": datetime.now(), "details": "Data Ingestion: sales_data.csv → Bronze"},
-            {"action": "complete", "user": "Pipeline", "timestamp": datetime.now(), "details": "Transform: Bronze → Silver (customers)"},
-            {"action": "run", "user": user.username, "timestamp": datetime.now(), "details": "LLM Query: 'Show top customers'"},
-            {"action": "complete", "user": "AI", "timestamp": datetime.now(), "details": "Entity Extraction: 45 entities from documents"},
-            {"action": "fail", "user": "Pipeline", "timestamp": datetime.now(), "details": "daily_etl_pipeline (timeout)"},
+            """, unsafe_allow_html=True)
+        
+        st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
+        
+        st.markdown("#### Recent Activity")
+        
+        activities = [
+            ("Data ingested", "sales_data.csv", "2m ago", "#059669"),
+            ("Pipeline completed", "Bronze to Silver", "5m ago", "#2563EB"),
+            ("Query executed", "Top customers", "12m ago", "#7C3AED"),
+            ("Pipeline failed", "daily_etl", "1h ago", "#DC2626"),
         ]
-        activity_feed_widget(activity_data, title="Recent Activity", max_items=5)
-
-    with col_right:
-        # Data Quality Score
-        data_quality_score_widget(
-            score=87,
-            title="Data Quality Score",
-            breakdown={
-                "Completeness": 92,
-                "Accuracy": 88,
-                "Consistency": 85,
-                "Timeliness": 83,
-            }
-        )
-
-        st.markdown("---")
-
-        # Storage Breakdown
-        storage_breakdown_widget(
-            breakdown={
-                "Bronze": 1.2,
-                "Silver": 0.89,
-                "Gold": 0.32,
-            },
-            title="Storage Usage",
-            total=5.0
-        )
-
-        st.markdown("""
-        <div style="margin-bottom: 1rem;">
-            <h3 style="font-size: 1rem; font-weight: 600; color: #0F172A; margin: 0 0 1rem;">Quick Actions</h3>
-        </div>
-        """, unsafe_allow_html=True)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("📥 Ingest Data", use_container_width=True, type="primary"):
-                navigate_to("ingestion")
-            if st.button("💬 Query Data", use_container_width=True):
-                navigate_to("query")
-        with col2:
-            if st.button("🔧 Create Pipeline", use_container_width=True):
-                navigate_to("pipelines")
-            if st.button("🌳 View Lineage", use_container_width=True):
-                navigate_to("lineage")
-
-    # System Health
-    st.markdown("---")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        system_health_widget({
-            "Delta Lake": "healthy",
-            "LLM Service": "healthy",
-            "Scheduler": "healthy",
-            "Notification Service": "degraded",
-        }, title="System Health")
-
-    with col2:
-        # Pipeline Status
-        pipelines = [
-            {"name": "customer_processing", "status": "running", "last_run": datetime.now(), "duration": 45},
-            {"name": "orders_etl", "status": "completed", "last_run": datetime.now(), "duration": 120},
-            {"name": "daily_aggregation", "status": "pending", "last_run": None, "duration": None},
-            {"name": "data_quality_check", "status": "failed", "last_run": datetime.now(), "duration": 30},
-        ]
-        pipeline_status_widget(pipelines, title="Pipeline Status", show_details=True)
-
-    # Quick Start Guide
-    st.markdown("---")
-    with st.expander("Quick Start Guide", expanded=False):
-        st.markdown("""
-        ### Getting Started with Automic ETL
-
-        1. **Configure Your Data Source**
-           - Go to Settings → Data Sources
-           - Add your cloud storage credentials (AWS/GCS/Azure)
-
-        2. **Ingest Data**
-           - Use Data Ingestion to upload files or connect to databases
-           - Data automatically lands in the Bronze layer
-
-        3. **Build Pipelines**
-           - Use Pipeline Builder to create transformation pipelines
-           - Define Bronze → Silver → Gold processing
-
-        4. **Query with AI**
-           - Use Query Studio to ask questions in natural language
-           - The LLM converts your questions to SQL automatically
-
-        5. **Monitor & Profile**
-           - View data quality metrics in Data Profiling
-           - Track pipeline runs in Monitoring
-
-        6. **View Data Lineage**
-           - Use Data Lineage to understand data flow
-           - Perform impact analysis before making changes
-        """)
+        
+        for title, detail, time, color in activities:
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #F3F4F6;">
+                <div style="width: 6px; height: 6px; border-radius: 50%; background: {color}; margin-right: 0.75rem;"></div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.875rem; color: #111827;">{title}</div>
+                    <div style="font-size: 0.75rem; color: #9CA3AF;">{detail}</div>
+                </div>
+                <div style="font-size: 0.75rem; color: #9CA3AF;">{time}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with col_side:
+        st.markdown("#### Quick Actions")
+        
+        if st.button("Upload Data", use_container_width=True, type="primary"):
+            navigate_to("ingestion")
+        if st.button("Create Pipeline", use_container_width=True):
+            navigate_to("pipelines")
+        if st.button("Query Data", use_container_width=True):
+            navigate_to("query")
+        
+        st.markdown("<div style='height: 1rem'></div>", unsafe_allow_html=True)
+        
+        st.markdown("#### Data Quality")
+        st.progress(0.87)
+        st.caption("87% overall score")
 
 
 def show_connectors_page():
