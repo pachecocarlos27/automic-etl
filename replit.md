@@ -4,6 +4,41 @@
 **Automic ETL** is an AI-augmented ETL tool for building data lakehouses with medallion architecture (Bronze/Silver/Gold). It features LLM integration for intelligent data processing, supports multiple cloud storage providers, and includes both a Streamlit web UI and FastAPI backend.
 
 ## Recent Changes
+- **2025-12-02**: Data Processing Capabilities Added
+  - **Hugging Face Dataset Connector** (`src/automic_etl/connectors/datasets/huggingface.py`):
+    - Load any dataset from Hugging Face Hub
+    - Support for streaming large datasets
+    - Automatic schema detection
+    - Configurable sample sizes
+    - Audio file handling and extraction
+  - **Audio/Media Connector** (`src/automic_etl/connectors/media/audio.py`):
+    - Support for WAV, MP3, FLAC, OGG, M4A, AAC formats
+    - Metadata extraction (duration, sample rate, channels)
+    - Segment-based audio processing (mute, bleep)
+    - Batch file processing
+  - **Text Redaction Service** (`src/automic_etl/services/redaction.py`):
+    - Configurable entity patterns (regex or exact match)
+    - Multiple redaction strategies (tag, mask, hash, remove)
+    - Built-in patterns for PII, temporal (days, months), locations (cities, states)
+    - Case-insensitive and word-boundary matching
+    - Detailed replacement logging for audit trails
+    - DataFrame batch processing
+  - **Transformation QA Tools** (`src/automic_etl/services/qa.py`):
+    - Before/after DataFrame comparison
+    - Entity count verification
+    - Sample-based spot checking
+    - Statistical summaries and reports
+  - **Dataset Curation Service** (`src/automic_etl/services/dataset_curator.py`):
+    - Configurable output layouts
+    - Train/test/val splitting with custom ratios
+    - Metadata schema generation (Parquet, JSON, CSV)
+    - QA report inclusion
+    - Manifest generation
+  - **New UI Page** (`src/automic_etl/ui/pages/data_processing.py`):
+    - Hugging Face import tab with streaming support
+    - Text redaction configuration with pattern builder
+    - Audio processing operations
+    - Dataset curation and export
 - **2025-12-01**: Material Design 3 UI Implementation
   - **Design System**: Material 3 (Material You) color palette with semantic tokens
   - **Primary Colors**: Deep Indigo (#3F51B5) - professional, trustworthy for data tools
@@ -90,7 +125,13 @@
   - DataService: Data table metadata tracking
 
 ### Core Components
-- **Connectors**: Database, API, streaming, and file connectors (`src/automic_etl/connectors/`)
+- **Connectors**: Database, API, streaming, file, dataset, and media connectors (`src/automic_etl/connectors/`)
+  - **Dataset Connectors**: Hugging Face Hub integration (`src/automic_etl/connectors/datasets/`)
+  - **Media Connectors**: Audio file processing (`src/automic_etl/connectors/media/`)
+- **Services**: Data processing services (`src/automic_etl/services/`)
+  - **Redaction Service**: Text de-identification with configurable patterns
+  - **QA Tools**: Transformation verification and comparison
+  - **Dataset Curator**: Data packaging for distribution
 - **Medallion Architecture**: Bronze/Silver/Gold data layers (`src/automic_etl/medallion/`)
 - **LLM Integration**: AI-powered features (`src/automic_etl/llm/`)
 - **Data Lineage**: Tracking and visualization (`src/automic_etl/lineage/`)

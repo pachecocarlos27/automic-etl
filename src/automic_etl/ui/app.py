@@ -22,6 +22,7 @@ class NavItem:
 NAV_ITEMS = [
     NavItem("home", "Home", "🏠"),
     NavItem("ingestion", "Data Ingestion", "📥"),
+    NavItem("processing", "Data Processing", "🔄"),
     NavItem("pipelines", "Pipeline Builder", "🔧"),
     NavItem("jobs", "Jobs & Orchestration", "📅"),
     NavItem("profiling", "Data Profiling", "📊"),
@@ -96,6 +97,9 @@ def get_page_function(page_key: str) -> Callable | None:
         if page_key == "ingestion":
             from automic_etl.ui.pages.ingestion import show_ingestion_page
             return show_ingestion_page
+        elif page_key == "processing":
+            from automic_etl.ui.pages.data_processing import show_data_processing_page
+            return show_data_processing_page
         elif page_key == "pipelines":
             from automic_etl.ui.pages.pipeline_builder import show_pipeline_builder_page
             return show_pipeline_builder_page

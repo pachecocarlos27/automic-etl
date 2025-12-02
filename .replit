@@ -5,7 +5,7 @@ integrations = ["streamlit_database:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["arrow-cpp", "cargo", "libiconv", "libxcrypt", "libyaml", "pkg-config", "poppler_utils", "rdkafka", "rustc", "tesseract"]
+packages = ["arrow-cpp", "cargo", "ffmpeg-full", "libiconv", "libsndfile", "libxcrypt", "libyaml", "pkg-config", "poppler_utils", "rdkafka", "rustc", "tesseract", "ffmpeg"]
 
 [workflows]
 runButton = "Project"

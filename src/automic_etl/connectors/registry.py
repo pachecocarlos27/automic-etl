@@ -68,6 +68,17 @@ def _register_builtin_connectors() -> None:
     ConnectorRegistry.register("docx", DocumentConnector)
     ConnectorRegistry.register("word", DocumentConnector)
 
+    # Dataset connectors
+    from automic_etl.connectors.datasets.huggingface import HuggingFaceConnector
+
+    ConnectorRegistry.register("huggingface", HuggingFaceConnector)
+    ConnectorRegistry.register("hf", HuggingFaceConnector)
+
+    # Media connectors
+    from automic_etl.connectors.media.audio import AudioConnector
+
+    ConnectorRegistry.register("audio", AudioConnector)
+
 
 # Register connectors on import
 _register_builtin_connectors()
@@ -113,6 +124,9 @@ def get_connector(
         "document": "automic_etl.connectors.unstructured.documents.DocumentConfig",
         "docx": "automic_etl.connectors.unstructured.documents.DocumentConfig",
         "word": "automic_etl.connectors.unstructured.documents.DocumentConfig",
+        "huggingface": "automic_etl.connectors.datasets.huggingface.HuggingFaceConfig",
+        "hf": "automic_etl.connectors.datasets.huggingface.HuggingFaceConfig",
+        "audio": "automic_etl.connectors.media.audio.AudioConfig",
     }
 
     config_path = config_mapping.get(connector_type.lower())
