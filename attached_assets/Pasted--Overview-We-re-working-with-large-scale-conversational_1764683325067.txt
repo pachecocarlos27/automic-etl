@@ -1,0 +1,151 @@
+# **Overview**
+
+We're working with large-scale conversational audio datasets that include transcripts and metadata. As a data engineer on our team, you'll be responsible for organizing, de-identifying, and preparing this data to be shared with AI model developers and researchers.
+
+This assignment is designed to assess your ability to think clearly about data at scale, privacy-sensitive workflows, and structured dataset curation.
+
+---
+
+## 🎯 Your Objective
+
+Build a lightweight pipeline that:
+
+1. Ingests and organizes audio + transcript data
+2. De-identifies *fake* PII from the transcripts
+3. Proposes (and optionally stubs) an approach to remove that PII from audio
+4. Verifies that de-identification worked
+5. Curates and outputs a “sellable” dataset structure
+
+We’ll review both your system design and code. You don’t need to productionize everything—focus on clarity and practicality.
+
+---
+
+## 🧪 Fake PII Categories
+
+For the purposes of this exercise, treat the following categories as PII:
+
+- Days of the week (e.g., Monday, Tuesday)
+- Months (e.g., January, February)
+- Colors (e.g., red, blue)
+- Cities (e.g., Denver, Seattle)
+- States (e.g., Utah, Texas)
+
+Your job is to detect and redact these in transcripts and (optionally) audio.
+
+---
+
+## 📦 Dataset
+
+Please use this Hugging Face dataset:
+
+> Appenlimited / 1000h-us-english-smartphone-conversation
+> 
+> 
+> https://huggingface.co/datasets/Appenlimited/1000h-us-english-smartphone-conversation
+> 
+
+You do **not** need to use the full dataset. A sample of ~50 conversations is plenty. Design your system to scale, but only process what’s needed to demonstrate your thinking.
+
+---
+
+## 📐 Deliverables
+
+You’ll submit two things:
+
+### 1. System Design (written doc, 1–2 pages max)
+
+Cover:
+
+- **Storage Architecture:**
+    
+    How you’d store raw and processed audio, transcripts, metadata, and outputs
+    
+- **De-Identification Pipeline:**
+    - High-level flow
+    - Versioning
+    - QA methods
+    - Assumptions
+- **Final Output Structure:**
+    - Layout of the sellable dataset
+    - Schema for metadata
+    - Anything a customer would need to use the data
+
+You can write this in Markdown, Google Docs, Notion, or plain text—whatever is easiest.
+
+---
+
+### 2. Code Submission
+
+You can use any language, but we suggest Python for ease of integration.
+
+Your submission should include:
+
+### A. 📥 Data Ingestion
+
+- Load ~50 conversations from the HF dataset
+- Store audio, transcripts, and metadata in a logical folder structure
+- Generate a basic summary:
+    - Number of conversations
+    - Total duration
+    - Any basic metadata stats
+
+### B. ✂️ Transcript De-Identification
+
+- Use a configurable list of fake PII terms
+- Replace them with tags like `[CITY]`, `[COLOR]`, etc.
+- Handle capitalization, punctuation, and simple variations
+- Store the redacted transcripts separately
+- Log replacements per conversation
+
+### C. 🔇 Audio De-ID (Proposal + Optional Stub)
+
+- Describe how you'd:
+    - Get word-level timestamps
+    - Detect audio spans to redact
+    - Mute, bleep, or re-synthesize those spans
+
+Optional: stub or partial implementation (e.g., mute known time ranges).
+
+### D. 🧪 Verification & QA
+
+Include at least one of:
+
+- Script comparing PII counts before/after de-ID
+- Sampling tool: show original vs. redacted examples
+- Unit tests for your de-ID function
+
+### E. 📁 Dataset Curation
+
+Organize your output as if you were handing it to a paying customer:
+
+Suggested layout:
+
+```
+/audio/train/abc123.flac
+/transcripts_raw/train/abc123.json
+/transcripts_deid/train/abc123.json
+/metadata/conversations.parquet
+/qa/deid_spot_checks.jsonl
+
+```
+
+Include a metadata row like:
+
+```json
+{
+  "conversation_id": "abc123",
+  "duration_sec": 412.5,
+  "num_speakers": 2,
+  "sample_rate": 16000,
+  "has_pii": true,
+  "deid_version": "2025-11-18_v1",
+  "qa_status": "approved"
+}
+
+```
+
+---
+
+## 🕒 Timebox
+
+This is intended to take **2–4 hours of actual work**. Please don’t spend more than that. You can leave parts unfinished or stubbed—just be clear what you would do next.
