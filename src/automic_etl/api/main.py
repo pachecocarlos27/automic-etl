@@ -76,6 +76,7 @@ def create_app(
             {"name": "jobs", "description": "Job orchestration"},
             {"name": "companies", "description": "Company/organization management"},
             {"name": "admin", "description": "Superadmin controls"},
+            {"name": "airflow", "description": "Apache Airflow integration with agentic capabilities"},
         ],
     )
 
@@ -155,6 +156,7 @@ def create_app(
         jobs,
         companies,
         admin,
+        airflow,
     )
 
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
@@ -166,6 +168,7 @@ def create_app(
     app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
     app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
     app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+    app.include_router(airflow.router, prefix="/api/v1", tags=["airflow"])
 
     return app
 
