@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 from functools import wraps
 import json
@@ -11,6 +11,7 @@ from pathlib import Path
 
 import structlog
 
+from automic_etl.core.utils import utc_now
 from automic_etl.auth.models import User, AuditLog, AuditAction, UserStatus
 from automic_etl.auth.tenant import (
     Company,
@@ -679,7 +680,7 @@ class SuperadminController:
     def get_platform_statistics(self) -> dict[str, Any]:
         """Get comprehensive platform statistics."""
         stats = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "platform_name": self.global_settings.platform_name,
             "maintenance_mode": self.global_settings.maintenance_mode,
         }
@@ -696,7 +697,7 @@ class SuperadminController:
             "total": len(self.audit_logs),
             "recent_24h": len([
                 log for log in self.audit_logs
-                if log.timestamp > datetime.utcnow() - timedelta(hours=24)
+                if log.timestamp > utc_now() - timedelta(hours=24)
             ]),
         }
 

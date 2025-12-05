@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional, List
 import uuid
 
 from croniter import croniter
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import JobScheduleModel, JobRunModel
 
@@ -92,7 +93,7 @@ class JobService:
     def get_due_schedules(self) -> List[JobScheduleModel]:
         """Get all enabled schedules that are due to run."""
         with get_session() as session:
-            now = datetime.utcnow()
+            now = utc_now()
             schedules = session.query(JobScheduleModel).filter(
                 JobScheduleModel.enabled == True,
                 JobScheduleModel.next_run_at <= now,
@@ -140,7 +141,7 @@ class JobService:
                     schedule.schedule_type, schedule.schedule_value
                 )
 
-            schedule.updated_at = datetime.utcnow()
+            schedule.updated_at = utc_now()
             session.flush()
             session.expunge(schedule)
             return schedule
@@ -166,7 +167,7 @@ class JobService:
             ).first()
 
             if schedule:
-                schedule.last_run_at = datetime.utcnow()
+                schedule.last_run_at = utc_now()
                 schedule.run_count = (schedule.run_count or 0) + 1
                 schedule.next_run_at = self._calculate_next_run(
                     schedule.schedule_type, schedule.schedule_value
@@ -214,13 +215,13 @@ class JobService:
             if status is not None:
                 run.status = status
                 if status in ("completed", "failed", "cancelled"):
-                    run.completed_at = datetime.utcnow()
+                    run.completed_at = utc_now()
                     if run.started_at:
                         run.duration_seconds = (
                             run.completed_at - run.started_at
                         ).total_seconds()
                 elif status == "running":
-                    run.started_at = datetime.utcnow()
+                    run.started_at = utc_now()
 
             if result is not None:
                 run.result = result
@@ -262,7 +263,7 @@ class JobService:
         schedule_value: str,
     ) -> datetime:
         """Calculate the next run time based on schedule type."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         if schedule_type == "cron":
             try:

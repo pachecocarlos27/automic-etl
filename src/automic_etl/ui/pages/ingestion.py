@@ -1,7 +1,8 @@
-"""Data Ingestion Page for Automic ETL UI."""
+"""Data Ingestion Page for Automic ETL UI - Sleek minimal design."""
 
 from __future__ import annotations
 
+import httpx
 import streamlit as st
 import polars as pl
 from io import BytesIO
@@ -10,20 +11,62 @@ import time
 
 from automic_etl.db.data_service import get_data_service
 
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0)
+
 
 def show_ingestion_page():
-    """Display the data ingestion page with Material Design."""
+    """Display the data ingestion page with sleek minimal design."""
+    # Page header
     st.markdown("""
     <div style="margin-bottom: 2rem;">
-        <h1 style="font-size: 1.75rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">Data Ingestion</h1>
-        <p style="font-size: 1rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Upload files or connect to data sources</p>
+        <h1 style="
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0F172A;
+            margin: 0 0 0.375rem;
+            letter-spacing: -0.025em;
+        ">Data Ingestion</h1>
+        <p style="font-size: 0.875rem; color: #64748B; margin: 0;">
+            Upload files or connect to data sources
+        </p>
     </div>
+    """, unsafe_allow_html=True)
+
+    # Tab styling
+    st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background: #F8FAFC;
+        border-radius: 10px;
+        padding: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border-radius: 8px;
+        color: #64748B;
+        font-weight: 500;
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    .stTabs [aria-selected="true"] {
+        background: white !important;
+        color: #0F172A !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    </style>
     """, unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs([
         "File Upload",
         "Data Tables",
-        "Database Connection",
+        "Database",
     ])
 
     with tab1:
@@ -37,124 +80,198 @@ def show_ingestion_page():
 
 
 def show_file_upload_section():
-    """Show file upload section."""
-    st.subheader("Upload Files")
+    """Show file upload section with minimal styling."""
+    _section_header("Upload Files", "Drag and drop or click to browse")
 
     user = st.session_state.get("user")
     if not user:
-        st.warning("Please log in to upload files.")
+        _info_card("Please log in to upload files.", "info")
         return
 
+    # Styled file uploader
     uploaded_files = st.file_uploader(
-        "Choose files to upload",
+        "Choose files",
         type=["csv", "json", "parquet", "xlsx"],
         accept_multiple_files=True,
-        help="Supported formats: CSV, JSON, Parquet, Excel",
+        help="Supported: CSV, JSON, Parquet, Excel",
+        label_visibility="collapsed",
     )
 
     if uploaded_files:
-        st.markdown("---")
-        st.subheader("Uploaded Files")
+        st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+        _section_header("Uploaded Files", f"{len(uploaded_files)} file(s) ready")
 
         for uploaded_file in uploaded_files:
-            with st.expander(f"{uploaded_file.name}", expanded=True):
-                col1, col2 = st.columns([3, 1])
+            _render_file_card(uploaded_file)
 
-                with col1:
-                    try:
-                        if uploaded_file.name.endswith(".csv"):
-                            df = pl.read_csv(BytesIO(uploaded_file.getvalue()))
-                        elif uploaded_file.name.endswith(".json"):
-                            df = pl.read_json(BytesIO(uploaded_file.getvalue()))
-                        elif uploaded_file.name.endswith(".parquet"):
-                            df = pl.read_parquet(BytesIO(uploaded_file.getvalue()))
-                        elif uploaded_file.name.endswith(".xlsx"):
-                            df = pl.read_excel(BytesIO(uploaded_file.getvalue()))
-                        else:
-                            st.error(f"Unsupported file type: {uploaded_file.name}")
-                            continue
 
-                        st.markdown(f"**Shape:** {df.shape[0]:,} rows x {df.shape[1]} columns")
-                        st.dataframe(df.head(10), use_container_width=True)
+def _render_file_card(uploaded_file):
+    """Render a sleek file card for upload."""
+    with st.container():
+        st.markdown(f"""
+        <div style="
+            background: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        ">
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            ">
+                <div style="
+                    width: 36px;
+                    height: 36px;
+                    background: #EEF2FF;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #6366F1;
+                    font-size: 0.875rem;
+                ">◇</div>
+                <div>
+                    <div style="font-weight: 500; color: #0F172A; font-size: 0.9375rem;">
+                        {uploaded_file.name}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94A3B8;">
+                        {uploaded_file.size / 1024:.1f} KB
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-                        if "uploaded_dataframes" not in st.session_state:
-                            st.session_state["uploaded_dataframes"] = {}
-                        st.session_state["uploaded_dataframes"][uploaded_file.name] = df
+        try:
+            if uploaded_file.name.endswith(".csv"):
+                df = pl.read_csv(BytesIO(uploaded_file.getvalue()))
+            elif uploaded_file.name.endswith(".json"):
+                df = pl.read_json(BytesIO(uploaded_file.getvalue()))
+            elif uploaded_file.name.endswith(".parquet"):
+                df = pl.read_parquet(BytesIO(uploaded_file.getvalue()))
+            elif uploaded_file.name.endswith(".xlsx"):
+                df = pl.read_excel(BytesIO(uploaded_file.getvalue()))
+            else:
+                st.error(f"Unsupported file type: {uploaded_file.name}")
+                return
 
-                    except Exception as e:
-                        st.error(f"Error reading file: {e}")
-                        continue
+            # Data preview
+            col1, col2 = st.columns([3, 1])
 
-                with col2:
-                    st.markdown("**Options**")
-                    table_name = st.text_input(
-                        "Table Name",
-                        value=uploaded_file.name.rsplit(".", 1)[0].lower().replace(" ", "_"),
-                        key=f"table_{uploaded_file.name}",
-                    )
-                    target_layer = st.selectbox(
-                        "Target Layer",
-                        ["bronze", "silver"],
-                        key=f"layer_{uploaded_file.name}",
-                    )
+            with col1:
+                st.markdown(f"""
+                <div style="
+                    font-size: 0.75rem;
+                    color: #64748B;
+                    margin-bottom: 0.5rem;
+                ">
+                    {df.shape[0]:,} rows × {df.shape[1]} columns
+                </div>
+                """, unsafe_allow_html=True)
+                st.dataframe(df.head(10), use_container_width=True, height=200)
 
-                    if st.button("Ingest", key=f"ingest_{uploaded_file.name}", type="primary"):
-                        if not table_name:
-                            st.error("Please enter a table name.")
-                        else:
-                            with st.spinner("Ingesting data..."):
-                                progress = st.progress(0)
+            with col2:
+                st.markdown("""
+                <div style="font-size: 0.8125rem; font-weight: 500; color: #0F172A; margin-bottom: 0.75rem;">
+                    Options
+                </div>
+                """, unsafe_allow_html=True)
 
-                                schema_def = {
-                                    "columns": [
-                                        {"name": col, "dtype": str(df[col].dtype)}
-                                        for col in df.columns
-                                    ]
-                                }
+                table_name = st.text_input(
+                    "Table name",
+                    value=uploaded_file.name.rsplit(".", 1)[0].lower().replace(" ", "_"),
+                    key=f"table_{uploaded_file.name}",
+                    label_visibility="collapsed",
+                    placeholder="Table name",
+                )
 
-                                for i in range(50):
-                                    time.sleep(0.01)
-                                    progress.progress(i + 1)
+                target_layer = st.selectbox(
+                    "Layer",
+                    ["bronze", "silver"],
+                    key=f"layer_{uploaded_file.name}",
+                    label_visibility="collapsed",
+                )
 
-                                data_service = get_data_service()
-                                existing = data_service.get_table_by_name(table_name, target_layer)
+                if st.button("Ingest →", key=f"ingest_{uploaded_file.name}", type="primary", use_container_width=True):
+                    _perform_ingestion(uploaded_file, df, table_name, target_layer)
 
-                                if existing:
-                                    data_service.update_table(
-                                        table_id=existing.id,
-                                        row_count=df.shape[0],
-                                        size_bytes=len(uploaded_file.getvalue()),
-                                        schema_definition=schema_def,
-                                    )
-                                    st.info(f"Updated existing table: {target_layer}.{table_name}")
-                                else:
-                                    data_service.create_table(
-                                        name=table_name,
-                                        layer=target_layer,
-                                        schema_definition=schema_def,
-                                        row_count=df.shape[0],
-                                        size_bytes=len(uploaded_file.getvalue()),
-                                    )
-                                    st.success(f"Created table: {target_layer}.{table_name}")
+            if "uploaded_dataframes" not in st.session_state:
+                st.session_state["uploaded_dataframes"] = {}
+            st.session_state["uploaded_dataframes"][uploaded_file.name] = df
 
-                                for i in range(50, 100):
-                                    time.sleep(0.01)
-                                    progress.progress(i + 1)
+        except Exception as e:
+            _info_card(f"Error reading file: {e}", "error")
 
-                                st.success(f"Ingested {df.shape[0]:,} rows to {target_layer}.{table_name}")
+
+def _perform_ingestion(uploaded_file, df, table_name, target_layer):
+    """Perform data ingestion with progress."""
+    if not table_name:
+        st.error("Please enter a table name.")
+        return
+
+    with st.spinner("Ingesting..."):
+        progress = st.progress(0)
+
+        schema_def = {
+            "columns": [
+                {"name": col, "dtype": str(df[col].dtype)}
+                for col in df.columns
+            ]
+        }
+
+        for i in range(50):
+            time.sleep(0.01)
+            progress.progress(i + 1)
+
+        data_service = get_data_service()
+        existing = data_service.get_table_by_name(table_name, target_layer)
+
+        if existing:
+            data_service.update_table(
+                table_id=existing.id,
+                row_count=df.shape[0],
+                size_bytes=len(uploaded_file.getvalue()),
+                schema_definition=schema_def,
+            )
+        else:
+            data_service.create_table(
+                name=table_name,
+                layer=target_layer,
+                schema_definition=schema_def,
+                row_count=df.shape[0],
+                size_bytes=len(uploaded_file.getvalue()),
+            )
+
+        for i in range(50, 100):
+            time.sleep(0.01)
+            progress.progress(i + 1)
+
+        st.success(f"Ingested {df.shape[0]:,} rows → {target_layer}.{table_name}")
 
 
 def show_data_tables_section():
-    """Show existing data tables."""
-    st.subheader("Data Tables")
+    """Show existing data tables with minimal styling."""
+    _section_header("Data Tables", "Browse and manage your tables")
 
     data_service = get_data_service()
 
-    col1, col2 = st.columns([2, 1])
+    # Filters
+    col1, col2 = st.columns([3, 1])
     with col1:
-        search = st.text_input("Search tables", placeholder="Filter by name...")
+        search = st.text_input(
+            "Search",
+            placeholder="Filter by name...",
+            label_visibility="collapsed",
+        )
     with col2:
-        layer_filter = st.selectbox("Layer", ["All", "bronze", "silver", "gold"])
+        layer_filter = st.selectbox(
+            "Layer",
+            ["All", "bronze", "silver", "gold"],
+            label_visibility="collapsed",
+        )
 
     layer = layer_filter if layer_filter != "All" else None
     tables = data_service.list_tables(layer=layer)
@@ -163,252 +280,332 @@ def show_data_tables_section():
         tables = [t for t in tables if search.lower() in t.name.lower()]
 
     if not tables:
-        st.info("No data tables found. Upload files to create tables.")
+        _empty_state("◇", "No tables found", "Upload files to create tables")
         return
 
-    st.markdown(f"**{len(tables)} table(s) found**")
+    # Tables count
+    st.markdown(f"""
+    <div style="
+        font-size: 0.75rem;
+        color: #64748B;
+        margin: 1rem 0 0.75rem;
+    ">{len(tables)} table(s)</div>
+    """, unsafe_allow_html=True)
 
-    col_headers = st.columns([2, 1, 1, 1, 1])
-    col_headers[0].markdown("**Table Name**")
-    col_headers[1].markdown("**Layer**")
-    col_headers[2].markdown("**Rows**")
-    col_headers[3].markdown("**Size**")
-    col_headers[4].markdown("**Updated**")
-
+    # Table list
     for table in tables:
-        cols = st.columns([2, 1, 1, 1, 1])
-        cols[0].markdown(f"**{table.name}**")
-        cols[1].markdown(table.layer)
-        cols[2].markdown(f"{table.row_count:,}")
+        _render_table_row(table, data_service)
 
-        size_kb = (table.size_bytes or 0) / 1024
-        if size_kb > 1024:
-            cols[3].markdown(f"{size_kb/1024:.1f} MB")
-        else:
-            cols[3].markdown(f"{size_kb:.1f} KB")
 
-        cols[4].markdown(table.updated_at.strftime("%Y-%m-%d %H:%M"))
+def _render_table_row(table, data_service):
+    """Render a sleek table row."""
+    size_kb = (table.size_bytes or 0) / 1024
+    size_str = f"{size_kb/1024:.1f} MB" if size_kb > 1024 else f"{size_kb:.1f} KB"
 
-        with st.expander(f"Details: {table.name}"):
-            schema = table.schema_definition or {}
-            columns = schema.get("columns", [])
+    layer_colors = {
+        "bronze": ("#A16207", "#FFFBEB"),
+        "silver": ("#6B7280", "#F8FAFC"),
+        "gold": ("#CA8A04", "#FEFCE8"),
+    }
+    layer_color, layer_bg = layer_colors.get(table.layer, ("#64748B", "#F8FAFC"))
 
-            if columns:
-                st.markdown("**Schema:**")
-                for col in columns:
-                    st.text(f"  {col.get('name')}: {col.get('dtype')}")
+    st.markdown(f"""
+    <div style="
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    ">
+        <div style="flex: 2;">
+            <div style="font-weight: 500; color: #0F172A; font-size: 0.9375rem;">
+                {table.name}
+            </div>
+            <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 0.125rem;">
+                {table.row_count:,} rows · {size_str}
+            </div>
+        </div>
+        <div style="
+            padding: 0.25rem 0.625rem;
+            background: {layer_bg};
+            color: {layer_color};
+            border-radius: 9999px;
+            font-size: 0.6875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        ">{table.layer}</div>
+        <div style="font-size: 0.75rem; color: #94A3B8;">
+            {table.updated_at.strftime("%m/%d %H:%M")}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-            col1, col2 = st.columns(2)
-            with col1:
-                if table.quality_score:
-                    st.metric("Quality Score", f"{table.quality_score:.1f}%")
-            with col2:
-                if st.button("Delete", key=f"delete_table_{table.id}"):
-                    data_service.delete_table(table.id)
-                    st.success(f"Table '{table.name}' deleted.")
-                    st.rerun()
+    with st.expander("Details"):
+        schema = table.schema_definition or {}
+        columns = schema.get("columns", [])
+
+        if columns:
+            st.markdown("""
+            <div style="font-size: 0.8125rem; font-weight: 500; color: #0F172A; margin-bottom: 0.5rem;">
+                Schema
+            </div>
+            """, unsafe_allow_html=True)
+
+            cols_html = ""
+            for col in columns:
+                cols_html += f"""
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 0.375rem 0;
+                    border-bottom: 1px solid #F1F5F9;
+                    font-size: 0.8125rem;
+                ">
+                    <span style="color: #0F172A;">{col.get('name')}</span>
+                    <span style="color: #94A3B8; font-family: monospace; font-size: 0.75rem;">{col.get('dtype')}</span>
+                </div>
+                """
+            st.markdown(cols_html, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if table.quality_score:
+                st.metric("Quality", f"{table.quality_score:.0f}%")
+        with col2:
+            if st.button("Delete", key=f"delete_{table.id}", type="secondary"):
+                data_service.delete_table(table.id)
+                st.success(f"Deleted '{table.name}'")
+                st.rerun()
 
 
 def show_database_connection_section():
-    """Show database connection section."""
-    st.subheader("Connect to Database")
+    """Show database connection section with minimal styling."""
+    _section_header("Connect to Database", "Configure your data source")
+
+    # Database type selection
+    db_types = ["PostgreSQL", "MySQL", "MongoDB", "SQL Server", "Snowflake", "BigQuery"]
+
+    st.markdown("""
+    <div style="font-size: 0.8125rem; font-weight: 500; color: #0F172A; margin-bottom: 0.5rem;">
+        Database Type
+    </div>
+    """, unsafe_allow_html=True)
 
     db_type = st.selectbox(
         "Database Type",
-        ["PostgreSQL", "MySQL", "MongoDB", "SQL Server", "Snowflake", "BigQuery"],
+        db_types,
+        label_visibility="collapsed",
     )
+
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+
+    # Connection details card
+    st.markdown("""
+    <div style="
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    ">
+        <div style="font-size: 0.8125rem; font-weight: 500; color: #0F172A; margin-bottom: 1rem;">
+            Connection Details
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        host = st.text_input("Host", value="localhost")
+        host = st.text_input("Host", value="localhost", placeholder="localhost")
         port = st.number_input(
             "Port",
             value=5432 if db_type == "PostgreSQL" else 3306,
             min_value=1,
             max_value=65535,
         )
-        database = st.text_input("Database Name")
+        database = st.text_input("Database", placeholder="database_name")
 
     with col2:
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        schema = st.text_input("Schema (optional)")
+        username = st.text_input("Username", placeholder="username")
+        password = st.text_input("Password", type="password", placeholder="••••••••")
+        schema = st.text_input("Schema", placeholder="public (optional)")
 
-    st.markdown("---")
+    st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
 
-    st.subheader("Query / Table Selection")
+    # Extraction method
+    st.markdown("""
+    <div style="font-size: 0.8125rem; font-weight: 500; color: #0F172A; margin-bottom: 0.75rem;">
+        Extraction Method
+    </div>
+    """, unsafe_allow_html=True)
 
     extraction_method = st.radio(
-        "Extraction Method",
+        "Method",
         ["Full Table", "Custom Query", "Incremental"],
         horizontal=True,
+        label_visibility="collapsed",
     )
 
+    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+
     if extraction_method == "Full Table":
-        table_name = st.text_input("Table Name")
+        table_name = st.text_input("Table Name", placeholder="customers")
+        query = None
+        watermark_column = None
     elif extraction_method == "Custom Query":
         query = st.text_area(
             "SQL Query",
-            height=150,
+            height=100,
             placeholder="SELECT * FROM customers WHERE created_at > '2024-01-01'",
         )
+        table_name = None
+        watermark_column = None
     else:
-        table_name = st.text_input("Table Name")
+        table_name = st.text_input("Table Name", placeholder="customers")
         watermark_column = st.text_input("Watermark Column", value="updated_at")
-        st.info("Incremental extraction will track changes using the watermark column.")
+        query = None
+        st.markdown("""
+        <div style="
+            font-size: 0.75rem;
+            color: #64748B;
+            background: #F8FAFC;
+            padding: 0.625rem 0.875rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+        ">
+            Incremental extraction tracks changes using the watermark column
+        </div>
+        """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 5])
+    st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
+
+    # Action buttons
+    col1, col2 = st.columns([1, 2])
+
     with col1:
-        if st.button("🔗 Test Connection", type="secondary"):
-            with st.spinner("Testing connection..."):
-                st.success("✅ Connection successful!")
+        if st.button("Test Connection", type="secondary", use_container_width=True):
+            _test_database_connection(db_type, host, port, database, username, password, schema)
 
     with col2:
-        if st.button("🚀 Start Extraction", type="primary"):
-            with st.spinner("Extracting data..."):
-                progress = st.progress(0)
-                for i in range(100):
-                    progress.progress(i + 1)
-                st.success("✅ Data extracted successfully!")
+        if st.button("Start Extraction →", type="primary", use_container_width=True):
+            _start_extraction(db_type, host, port, database, username, password, schema, extraction_method, table_name, query)
 
 
-def show_cloud_storage_section():
-    """Show cloud storage connection section."""
-    st.subheader("Connect to Cloud Storage")
-
-    provider = st.selectbox(
-        "Cloud Provider",
-        ["AWS S3", "Google Cloud Storage", "Azure Blob Storage"],
-    )
-
-    if provider == "AWS S3":
-        col1, col2 = st.columns(2)
-        with col1:
-            bucket = st.text_input("Bucket Name")
-            prefix = st.text_input("Prefix/Path", value="data/")
-            region = st.selectbox(
-                "Region",
-                ["us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"],
-            )
-        with col2:
-            access_key = st.text_input("Access Key ID")
-            secret_key = st.text_input("Secret Access Key", type="password")
-            st.checkbox("Use IAM Role", value=False)
-
-    elif provider == "Google Cloud Storage":
-        bucket = st.text_input("Bucket Name")
-        prefix = st.text_input("Prefix/Path", value="data/")
-        credentials_file = st.file_uploader(
-            "Service Account JSON",
-            type=["json"],
-        )
-
-    else:  # Azure
-        col1, col2 = st.columns(2)
-        with col1:
-            account_name = st.text_input("Storage Account Name")
-            container = st.text_input("Container Name")
-            prefix = st.text_input("Blob Prefix", value="data/")
-        with col2:
-            account_key = st.text_input("Account Key", type="password")
-            connection_string = st.text_input("Connection String (alternative)")
-
-    st.markdown("---")
-
-    st.subheader("File Pattern")
-    file_pattern = st.text_input(
-        "File Pattern",
-        value="*.parquet",
-        help="Glob pattern to match files (e.g., *.csv, data_*.json)",
-    )
-
-    recursive = st.checkbox("Recursive (include subdirectories)", value=True)
-
-    if st.button("📂 List Files", type="secondary"):
-        st.info("Found 15 files matching pattern")
-        st.json([
-            "data/customers_2024_01.parquet",
-            "data/customers_2024_02.parquet",
-            "data/orders_2024_01.parquet",
-        ])
-
-    if st.button("🚀 Ingest from Cloud", type="primary"):
-        with st.spinner("Ingesting from cloud storage..."):
-            progress = st.progress(0)
-            for i in range(100):
-                progress.progress(i + 1)
-            st.success("✅ Ingested 15 files from cloud storage!")
+def _test_database_connection(db_type, host, port, database, username, password, schema):
+    """Test database connection."""
+    with st.spinner("Testing..."):
+        try:
+            with _get_api_client() as client:
+                response = client.post(
+                    "/connectors/test-adhoc",
+                    json={
+                        "connector_type": db_type.lower().replace(" ", "_"),
+                        "config": {
+                            "host": host,
+                            "port": port,
+                            "database": database,
+                            "username": username,
+                            "password": password,
+                            "schema": schema,
+                        },
+                    },
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get("success"):
+                        st.success(f"Connected successfully")
+                    else:
+                        st.error(result.get("message", "Connection failed"))
+                else:
+                    st.error(f"Connection failed: HTTP {response.status_code}")
+        except Exception as e:
+            st.error(f"Connection failed: {e}")
 
 
-def show_unstructured_section():
-    """Show unstructured data section."""
-    st.subheader("Process Unstructured Data")
+def _start_extraction(db_type, host, port, database, username, password, schema, extraction_method, table_name, query):
+    """Start data extraction."""
+    with st.spinner("Extracting..."):
+        try:
+            with _get_api_client() as client:
+                response = client.post(
+                    "/ingestion/extract",
+                    json={
+                        "connector_type": db_type.lower().replace(" ", "_"),
+                        "config": {
+                            "host": host,
+                            "port": port,
+                            "database": database,
+                            "username": username,
+                            "password": password,
+                            "schema": schema,
+                        },
+                        "extraction_method": extraction_method,
+                        "table_name": table_name if extraction_method != "Custom Query" else None,
+                        "query": query if extraction_method == "Custom Query" else None,
+                    },
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    st.success(result.get("message", "Data extracted successfully"))
+                else:
+                    st.error(f"Extraction failed: HTTP {response.status_code}")
+        except Exception as e:
+            st.error(f"Extraction failed: {e}")
 
-    st.markdown("""
-    Upload unstructured documents for AI-powered processing:
-    - **PDFs**: Extract text, tables, and entities
-    - **Word Documents**: Extract content and metadata
-    - **Images**: OCR and entity extraction
-    """)
 
-    uploaded_docs = st.file_uploader(
-        "Upload Documents",
-        type=["pdf", "docx", "doc", "txt", "png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-    )
+# ============================================================================
+# Helper Components
+# ============================================================================
 
-    if uploaded_docs:
-        st.markdown("---")
-        st.subheader("Processing Options")
+def _section_header(title: str, subtitle: str | None = None):
+    """Render a minimal section header."""
+    subtitle_html = f'<div style="font-size: 0.8125rem; color: #94A3B8; margin-top: 0.25rem;">{subtitle}</div>' if subtitle else ''
+    st.markdown(f"""
+    <div style="margin-bottom: 1.25rem;">
+        <div style="font-size: 1rem; font-weight: 600; color: #0F172A;">{title}</div>
+        {subtitle_html}
+    </div>
+    """, unsafe_allow_html=True)
 
-        col1, col2 = st.columns(2)
 
-        with col1:
-            st.markdown("**Extraction Options**")
-            extract_text = st.checkbox("Extract Text", value=True)
-            extract_tables = st.checkbox("Extract Tables", value=True)
-            extract_images = st.checkbox("Extract Images", value=False)
-            perform_ocr = st.checkbox("Perform OCR", value=True)
+def _empty_state(icon: str, title: str, description: str):
+    """Render minimal empty state."""
+    st.markdown(f"""
+    <div style="
+        padding: 3rem 2rem;
+        text-align: center;
+        background: #F8FAFC;
+        border-radius: 12px;
+        border: 1px dashed #E2E8F0;
+    ">
+        <div style="font-size: 2rem; color: #CBD5E1; margin-bottom: 0.75rem;">{icon}</div>
+        <div style="font-size: 0.9375rem; font-weight: 500; color: #64748B; margin-bottom: 0.25rem;">{title}</div>
+        <div style="font-size: 0.8125rem; color: #94A3B8;">{description}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        with col2:
-            st.markdown("**AI Enrichment**")
-            entity_types = st.multiselect(
-                "Entity Types to Extract",
-                ["PERSON", "ORGANIZATION", "DATE", "MONEY", "EMAIL", "PHONE", "ADDRESS", "LOCATION"],
-                default=["PERSON", "ORGANIZATION", "DATE"],
-            )
-            classify_content = st.checkbox("Classify Content", value=True)
-            summarize = st.checkbox("Generate Summary", value=False)
 
-        st.markdown("---")
+def _info_card(message: str, type: str = "info"):
+    """Render minimal info card."""
+    colors = {
+        "info": ("#3B82F6", "#EFF6FF"),
+        "success": ("#10B981", "#ECFDF5"),
+        "warning": ("#F59E0B", "#FFFBEB"),
+        "error": ("#EF4444", "#FEF2F2"),
+    }
+    color, bg = colors.get(type, colors["info"])
 
-        for doc in uploaded_docs:
-            with st.expander(f"📄 {doc.name}"):
-                st.markdown(f"**Size:** {doc.size / 1024:.1f} KB")
-                st.markdown(f"**Type:** {doc.type}")
-
-                if st.button(f"Process {doc.name}", key=f"process_{doc.name}"):
-                    with st.spinner(f"Processing {doc.name}..."):
-                        progress = st.progress(0)
-                        for i in range(100):
-                            progress.progress(i + 1)
-
-                        st.success("✅ Document processed!")
-
-                        # Show mock results
-                        st.markdown("**Extracted Entities:**")
-                        st.json({
-                            "PERSON": ["John Smith", "Jane Doe"],
-                            "ORGANIZATION": ["Acme Corp", "TechCorp Inc"],
-                            "DATE": ["January 15, 2024", "Q1 2024"],
-                            "MONEY": ["$2.5M", "$150,000"],
-                        })
-
-        if st.button("🚀 Process All Documents", type="primary"):
-            with st.spinner("Processing all documents..."):
-                progress = st.progress(0)
-                for i in range(100):
-                    progress.progress(i + 1)
-                st.success(f"✅ Processed {len(uploaded_docs)} documents!")
-
+    st.markdown(f"""
+    <div style="
+        background: {bg};
+        border-left: 3px solid {color};
+        padding: 0.875rem 1rem;
+        border-radius: 0 8px 8px 0;
+        font-size: 0.875rem;
+        color: #0F172A;
+    ">{message}</div>
+    """, unsafe_allow_html=True)

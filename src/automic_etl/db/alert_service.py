@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional, List
 import uuid
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import (
     NotificationChannelModel,
@@ -92,7 +93,7 @@ class AlertService:
             if enabled is not None:
                 channel.enabled = enabled
 
-            channel.updated_at = datetime.utcnow()
+            channel.updated_at = utc_now()
             session.flush()
             session.expunge(channel)
             return channel
@@ -122,7 +123,7 @@ class AlertService:
             ).first()
 
             if channel:
-                channel.last_used_at = datetime.utcnow()
+                channel.last_used_at = utc_now()
                 channel.last_status = "success" if success else "failed"
 
     # Alert Rules
@@ -235,7 +236,7 @@ class AlertService:
             if cooldown_minutes is not None:
                 rule.cooldown_minutes = cooldown_minutes
 
-            rule.updated_at = datetime.utcnow()
+            rule.updated_at = utc_now()
             session.flush()
             session.expunge(rule)
             return rule
@@ -267,7 +268,7 @@ class AlertService:
                 return True
 
             cooldown_end = rule.last_triggered_at + timedelta(minutes=rule.cooldown_minutes)
-            return datetime.utcnow() >= cooldown_end
+            return utc_now() >= cooldown_end
 
     def mark_rule_triggered(self, rule_id: str) -> None:
         """Mark an alert rule as triggered."""
@@ -277,7 +278,7 @@ class AlertService:
             ).first()
 
             if rule:
-                rule.last_triggered_at = datetime.utcnow()
+                rule.last_triggered_at = utc_now()
                 rule.trigger_count = (rule.trigger_count or 0) + 1
 
     # Alert History
@@ -371,7 +372,7 @@ class AlertService:
                 return None
 
             alert.status = "acknowledged"
-            alert.acknowledged_at = datetime.utcnow()
+            alert.acknowledged_at = utc_now()
             alert.acknowledged_by = user_id
             session.flush()
             session.expunge(alert)
@@ -392,7 +393,7 @@ class AlertService:
                 return None
 
             alert.status = "resolved"
-            alert.resolved_at = datetime.utcnow()
+            alert.resolved_at = utc_now()
             alert.resolved_by = user_id
             session.flush()
             session.expunge(alert)
@@ -417,14 +418,14 @@ class AlertService:
                     "channel_id": channel_id,
                     "channel_type": channel_type,
                     "success": success,
-                    "sent_at": datetime.utcnow().isoformat(),
+                    "sent_at": utc_now().isoformat(),
                 })
                 alert.notifications_sent = notifications
 
     def get_alert_summary(self) -> dict:
         """Get summary statistics for alerts."""
         with get_session() as session:
-            now = datetime.utcnow()
+            now = utc_now()
             day_ago = now - timedelta(days=1)
 
             total_active = session.query(AlertHistoryModel).filter(

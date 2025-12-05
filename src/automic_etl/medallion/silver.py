@@ -11,6 +11,7 @@ import structlog
 from automic_etl.core.config import Settings
 from automic_etl.core.exceptions import TransformationError
 from automic_etl.storage.iceberg import IcebergTableManager
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -107,7 +108,7 @@ class SilverLayer:
         )
 
         # Add silver metadata
-        processing_time = datetime.utcnow()
+        processing_time = utc_now()
         df = self._add_metadata(
             df=df,
             bronze_table=source_table,

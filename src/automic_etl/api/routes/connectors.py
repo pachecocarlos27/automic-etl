@@ -293,6 +293,8 @@ async def test_connector(
     Args:
         connector_id: Connector ID
     """
+    import time
+
     service = get_connector_service()
     connector = service.get_connector(connector_id)
 
@@ -307,34 +309,36 @@ async def test_connector(
         connector_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    # In production, this would actually test the connection
-    # For demo, simulate a test
-    import random
-    import time
-
+    # Test the actual connection
     start = time.time()
-    success = random.random() > 0.1  # 90% success rate
+    try:
+        result = service.test_connection(connector_id)
+        latency = (time.time() - start) * 1000
 
-    latency = (time.time() - start) * 1000 + random.uniform(10, 100)
-
-    if success:
-        service.update_test_status(connector_id, "connected")
-        return ConnectorTestResult(
-            success=True,
-            message=f"Successfully connected to {connector.connector_type}",
-            latency_ms=latency,
-            details={
-                "version": "14.2" if connector.connector_type == "postgres" else "1.0",
-                "connection_pool_size": 10,
-            }
-        )
-    else:
+        if result.get("success", False):
+            service.update_test_status(connector_id, "connected")
+            return ConnectorTestResult(
+                success=True,
+                message=result.get("message", f"Successfully connected to {connector.connector_type}"),
+                latency_ms=latency,
+                details=result.get("details", {})
+            )
+        else:
+            service.update_test_status(connector_id, "error")
+            return ConnectorTestResult(
+                success=False,
+                message=result.get("message", "Connection test failed"),
+                latency_ms=latency,
+                details=result.get("details", {})
+            )
+    except Exception as e:
+        latency = (time.time() - start) * 1000
         service.update_test_status(connector_id, "error")
         return ConnectorTestResult(
             success=False,
-            message="Connection failed: timeout after 30 seconds",
+            message=f"Connection test failed: {str(e)}",
             latency_ms=latency,
-            details={"error_code": "CONN_TIMEOUT"}
+            details={"error": str(e)}
         )
 
 
@@ -421,48 +425,27 @@ async def get_connector_schema(
         connector_dict.get("company_id", ""), AccessLevel.READ
     )
 
-    # In production, this would fetch actual schema
-    # For demo, return sample schema based on type
+    # Fetch actual schema from connector
+    try:
+        schema = service.get_schema(connector_id)
+        if schema:
+            return schema
+    except Exception:
+        pass
+
+    # Return empty schema structure based on category
     category = connector.category
 
     if category == "database":
-        return {
-            "databases": ["main", "analytics"],
-            "schemas": {
-                "main": ["public", "staging"],
-                "analytics": ["reporting", "warehouse"],
-            },
-            "tables": [
-                {"schema": "public", "name": "users", "row_count": 10000},
-                {"schema": "public", "name": "orders", "row_count": 50000},
-                {"schema": "public", "name": "products", "row_count": 500},
-            ]
-        }
+        return {"databases": [], "schemas": {}, "tables": []}
     elif category == "api":
-        return {
-            "endpoints": [
-                {"path": "/users", "methods": ["GET", "POST"]},
-                {"path": "/orders", "methods": ["GET"]},
-                {"path": "/products", "methods": ["GET"]},
-            ],
-            "rate_limit": "100 requests/minute",
-        }
+        return {"endpoints": [], "rate_limit": None}
     elif category == "streaming":
-        return {
-            "topics": ["events", "logs", "metrics"],
-            "partitions": 12,
-            "consumer_groups": ["automic-etl", "analytics"],
-        }
+        return {"topics": [], "partitions": 0, "consumer_groups": []}
     elif category == "cloud_storage":
-        config = connector.config or {}
-        return {
-            "buckets": [config.get("bucket", "data-bucket")],
-            "prefixes": ["raw/", "processed/", "archive/"],
-            "file_count": 1523,
-            "total_size_gb": 45.6,
-        }
+        return {"buckets": [], "prefixes": [], "file_count": 0, "total_size_gb": 0}
     else:
-        return {"files": ["data.csv", "config.json"]}
+        return {"files": []}
 
 
 @router.post("/{connector_id}/preview")
@@ -499,16 +482,27 @@ async def preview_connector_data(
     # Update last used time
     service.update_test_status(connector_id, connector.status or "connected")
 
-    # Return sample preview data
+    # Fetch actual preview data from connector
+    try:
+        preview = service.preview_data(connector_id, table=table, path=path, limit=limit)
+        if preview:
+            return {
+                "connector_id": connector_id,
+                "connector_name": connector.name,
+                "source": table or path or "default",
+                "columns": preview.get("columns", []),
+                "data": preview.get("data", []),
+                "total_available": preview.get("total_available", len(preview.get("data", []))),
+            }
+    except Exception:
+        pass
+
+    # Return empty preview if unable to fetch
     return {
         "connector_id": connector_id,
         "connector_name": connector.name,
         "source": table or path or "default",
-        "columns": ["id", "name", "value", "timestamp"],
-        "data": [
-            [1, "Item A", 100.5, "2024-01-15T10:30:00Z"],
-            [2, "Item B", 200.75, "2024-01-15T11:00:00Z"],
-            [3, "Item C", 150.25, "2024-01-15T11:30:00Z"],
-        ][:limit],
-        "total_available": 10000,
+        "columns": [],
+        "data": [],
+        "total_available": 0,
     }

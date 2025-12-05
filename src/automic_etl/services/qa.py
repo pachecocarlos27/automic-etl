@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
 from enum import Enum
 import json
 
 import polars as pl
 import structlog
+
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -44,7 +45,7 @@ class ComparisonReport:
     summary: str
     passed: bool
     checks: list[QACheck] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -77,7 +78,7 @@ class QAResult:
     checks: list[QACheck]
     summary: str
     metadata: dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
 
     @property
     def passed_count(self) -> int:
@@ -452,7 +453,7 @@ class TransformationQA:
         return {
             "title": title,
             "overall_status": "PASSED" if overall_passed else "FAILED",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utc_now().isoformat(),
             "summary": {
                 "total_checks": total_checks,
                 "passed": total_passed,

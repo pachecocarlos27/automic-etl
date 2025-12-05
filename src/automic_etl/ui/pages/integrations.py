@@ -2,9 +2,30 @@
 
 from __future__ import annotations
 
+import httpx
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Any
+
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0)
+
+
+def _get_dbt_models() -> list[dict[str, Any]]:
+    """Fetch dbt models from API."""
+    try:
+        with _get_api_client() as client:
+            response = client.get("/integrations/dbt/models")
+            if response.status_code == 200:
+                return response.json().get("models", [])
+            return []
+    except Exception:
+        return []
 
 
 def show_integrations_page():
@@ -351,14 +372,12 @@ def _show_dbt_integration():
 
     st.markdown("---")
 
-    # Model list
-    models = [
-        {"name": "stg_customers", "schema": "staging", "materialized": "view", "status": "success", "run_time": "2.3s"},
-        {"name": "stg_orders", "schema": "staging", "materialized": "view", "status": "success", "run_time": "1.8s"},
-        {"name": "dim_customers", "schema": "marts", "materialized": "table", "status": "success", "run_time": "15.2s"},
-        {"name": "fct_orders", "schema": "marts", "materialized": "incremental", "status": "success", "run_time": "45.6s"},
-        {"name": "customer_360", "schema": "marts", "materialized": "table", "status": "error", "run_time": "-"},
-    ]
+    # Fetch model list from API
+    models = _get_dbt_models()
+
+    if not models:
+        st.info("No dbt models found. Configure dbt project to get started.")
+        return
 
     for model in models:
         col1, col2, col3, col4 = st.columns([3, 2, 2, 1])

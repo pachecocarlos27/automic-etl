@@ -12,6 +12,7 @@ import traceback
 import structlog
 
 from automic_etl.orchestration.scheduler import JobStatus
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -114,7 +115,7 @@ class Job:
             JobResult with execution details
         """
         execution_id = str(uuid.uuid4())
-        started_at = datetime.utcnow()
+        started_at = utc_now()
 
         # Merge parameters
         params = {**self.parameters, **override_params}
@@ -137,7 +138,7 @@ class Job:
         try:
             output = self.func(context)
 
-            ended_at = datetime.utcnow()
+            ended_at = utc_now()
 
             result = JobResult(
                 job_id=self.job_id,
@@ -158,7 +159,7 @@ class Job:
             )
 
         except Exception as e:
-            ended_at = datetime.utcnow()
+            ended_at = utc_now()
 
             result = JobResult(
                 job_id=self.job_id,

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional, List
 import uuid
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import ValidationRuleModel, ValidationResultModel
 
@@ -120,7 +120,7 @@ class ValidationService:
             if enabled is not None:
                 rule.enabled = enabled
 
-            rule.updated_at = datetime.utcnow()
+            rule.updated_at = utc_now()
             session.flush()
             session.expunge(rule)
             return rule
@@ -171,7 +171,7 @@ class ValidationService:
                 ValidationRuleModel.id == rule_id
             ).first()
             if rule:
-                rule.last_run_at = datetime.utcnow()
+                rule.last_run_at = utc_now()
                 rule.last_status = status
 
             session.flush()

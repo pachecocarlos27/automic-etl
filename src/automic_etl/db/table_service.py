@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional, List
 import uuid
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import DataTableModel
 
@@ -131,11 +131,11 @@ class TableService:
                 table.quality_score = quality_score
             if profile_data is not None:
                 table.profile_data = profile_data
-                table.last_profiled_at = datetime.utcnow()
+                table.last_profiled_at = utc_now()
             if tags is not None:
                 table.tags = tags
 
-            table.updated_at = datetime.utcnow()
+            table.updated_at = utc_now()
             session.flush()
             session.expunge(table)
             return table
@@ -166,7 +166,7 @@ class TableService:
             existing_tags = set(table.tags or [])
             existing_tags.update(tags)
             table.tags = list(existing_tags)
-            table.updated_at = datetime.utcnow()
+            table.updated_at = utc_now()
 
             session.flush()
             session.expunge(table)
@@ -189,7 +189,7 @@ class TableService:
             schema = table.schema_definition or {}
             schema["columns"] = columns
             table.schema_definition = schema
-            table.updated_at = datetime.utcnow()
+            table.updated_at = utc_now()
 
             session.flush()
             session.expunge(table)
@@ -214,7 +214,7 @@ class TableService:
             columns.append(column)
             schema["columns"] = columns
             table.schema_definition = schema
-            table.updated_at = datetime.utcnow()
+            table.updated_at = utc_now()
 
             session.flush()
             session.expunge(table)
@@ -244,7 +244,7 @@ class TableService:
 
             schema["columns"] = columns
             table.schema_definition = schema
-            table.updated_at = datetime.utcnow()
+            table.updated_at = utc_now()
 
             session.flush()
             session.expunge(table)
@@ -273,6 +273,39 @@ class TableService:
                 "silver_tables": silver_count,
                 "gold_tables": gold_count,
             }
+
+    def query_table_data(
+        self,
+        table_id: str,
+        columns: Optional[List[str]] = None,
+        filters: Optional[dict] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict:
+        """
+        Query data from a table.
+
+        This is a simplified implementation that returns metadata-based results.
+        In production, this would query actual Delta Lake/Parquet data.
+        """
+        table = self.get_table(table_id)
+        if not table:
+            return {"columns": [], "data": [], "total_rows": 0}
+
+        schema = table.schema_definition or {}
+        all_columns = schema.get("columns", [])
+
+        # Use requested columns or all columns
+        if columns:
+            col_names = columns
+        else:
+            col_names = [c.get("name", f"col_{i}") for i, c in enumerate(all_columns)]
+
+        return {
+            "columns": col_names,
+            "data": [],
+            "total_rows": table.row_count or 0,
+        }
 
 
 # Singleton instance

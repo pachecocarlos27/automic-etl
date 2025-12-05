@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional, List
 import uuid
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import PipelineModel, PipelineRunModel
 
@@ -111,7 +111,7 @@ class PipelineService:
             if transformations is not None:
                 pipeline.transformations = transformations
 
-            pipeline.updated_at = datetime.utcnow()
+            pipeline.updated_at = utc_now()
             session.flush()
             session.expunge(pipeline)
             return pipeline
@@ -143,12 +143,12 @@ class PipelineService:
                 id=str(uuid.uuid4()),
                 pipeline_id=pipeline_id,
                 status="running",
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
             )
             session.add(run)
 
             pipeline.status = "running"
-            pipeline.last_run_at = datetime.utcnow()
+            pipeline.last_run_at = utc_now()
             pipeline.run_count = (pipeline.run_count or 0) + 1
 
             session.flush()
@@ -172,7 +172,7 @@ class PipelineService:
                 return None
 
             run.status = status
-            run.completed_at = datetime.utcnow()
+            run.completed_at = utc_now()
             run.records_processed = records_processed
             run.error_message = error_message
 

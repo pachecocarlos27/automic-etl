@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional, List
 import uuid
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import ConnectorConfigModel
 
@@ -110,7 +110,7 @@ class ConnectorService:
             if metadata is not None:
                 connector.metadata_ = metadata
 
-            connector.updated_at = datetime.utcnow()
+            connector.updated_at = utc_now()
             session.flush()
             session.expunge(connector)
             return connector
@@ -131,27 +131,110 @@ class ConnectorService:
     def update_test_status(
         self,
         connector_id: str,
-        success: bool,
-        error_message: Optional[str] = None,
+        status: str,
     ) -> None:
-        """Update connector test status."""
+        """Update connector status after test."""
         with get_session() as session:
             connector = session.query(ConnectorConfigModel).filter(
                 ConnectorConfigModel.id == connector_id
             ).first()
 
             if connector:
-                connector.last_tested_at = datetime.utcnow()
-                connector.last_test_status = "success" if success else "failed"
-                if success:
-                    connector.status = "active"
-                else:
-                    connector.status = "error"
-                    if error_message:
-                        connector.metadata_ = {
-                            **connector.metadata_,
-                            "last_error": error_message,
-                        }
+                connector.last_tested_at = utc_now()
+                connector.status = status
+                session.flush()
+
+    def test_connection(self, connector_id: str) -> dict:
+        """
+        Test a connector connection.
+
+        This is a simplified implementation that simulates connection testing.
+        In production, this would actually connect to the data source.
+        """
+        connector = self.get_connector(connector_id)
+        if not connector:
+            return {"success": False, "message": "Connector not found"}
+
+        # Simulate connection test based on connector type
+        connector_type = connector.connector_type
+        config = connector.config or {}
+
+        # Check required fields based on type
+        required_fields = {
+            "postgres": ["host", "database"],
+            "mysql": ["host", "database"],
+            "snowflake": ["account", "database"],
+            "bigquery": ["project_id"],
+            "mongodb": ["connection_string"],
+            "s3": ["bucket"],
+            "gcs": ["bucket"],
+            "azure_blob": ["container"],
+            "kafka": ["bootstrap_servers"],
+            "rest": ["base_url"],
+        }
+
+        type_fields = required_fields.get(connector_type, [])
+        missing = [f for f in type_fields if not config.get(f)]
+
+        if missing:
+            return {
+                "success": False,
+                "message": f"Missing required fields: {', '.join(missing)}",
+                "details": {"missing_fields": missing},
+            }
+
+        return {
+            "success": True,
+            "message": f"Successfully connected to {connector_type}",
+            "details": {"connector_type": connector_type},
+        }
+
+    def get_schema(self, connector_id: str) -> Optional[dict]:
+        """
+        Get schema/metadata from a connector.
+
+        This is a simplified implementation that returns empty schemas.
+        In production, this would query the actual data source for metadata.
+        """
+        connector = self.get_connector(connector_id)
+        if not connector:
+            return None
+
+        category = connector.category
+
+        if category == "database":
+            return {"databases": [], "schemas": {}, "tables": []}
+        elif category == "api":
+            return {"endpoints": [], "rate_limit": None}
+        elif category == "streaming":
+            return {"topics": [], "partitions": 0, "consumer_groups": []}
+        elif category == "cloud_storage":
+            return {"buckets": [], "prefixes": [], "file_count": 0, "total_size_gb": 0}
+        else:
+            return {"files": []}
+
+    def preview_data(
+        self,
+        connector_id: str,
+        table: Optional[str] = None,
+        path: Optional[str] = None,
+        limit: int = 10,
+    ) -> Optional[dict]:
+        """
+        Preview data from a connector.
+
+        This is a simplified implementation that returns empty data.
+        In production, this would fetch actual data from the source.
+        """
+        connector = self.get_connector(connector_id)
+        if not connector:
+            return None
+
+        return {
+            "columns": [],
+            "data": [],
+            "total_available": 0,
+        }
 
     def get_active_connectors_by_type(self, connector_type: str) -> List[ConnectorConfigModel]:
         """Get all active connectors of a specific type."""

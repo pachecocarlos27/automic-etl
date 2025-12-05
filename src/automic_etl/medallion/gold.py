@@ -12,6 +12,7 @@ import structlog
 from automic_etl.core.config import Settings
 from automic_etl.core.exceptions import TransformationError
 from automic_etl.storage.iceberg import IcebergTableManager
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -105,7 +106,7 @@ class GoldLayer:
             df = df.filter(pl.sql_expr(having_expr))
 
         # Add gold metadata
-        computed_time = datetime.utcnow()
+        computed_time = utc_now()
         df = self._add_metadata(df, [source_table], computed_time)
 
         # Write to gold layer
@@ -167,7 +168,7 @@ class GoldLayer:
         df = df.select([c for c in feature_cols if c in df.columns])
 
         # Add metadata
-        computed_time = datetime.utcnow()
+        computed_time = utc_now()
         df = self._add_metadata(df, source_tables, computed_time)
 
         return self._write(target_table, df, mode)
@@ -216,7 +217,7 @@ class GoldLayer:
             df = df.select([c for c in select_columns if c in df.columns])
 
         # Add metadata
-        computed_time = datetime.utcnow()
+        computed_time = utc_now()
         df = self._add_metadata(df, source_tables, computed_time)
 
         return self._write(target_table, df, mode)
@@ -272,7 +273,7 @@ class GoldLayer:
             df = df.select(metric_exprs)
 
         # Add metadata
-        computed_time = datetime.utcnow()
+        computed_time = utc_now()
         df = self._add_metadata(df, [source_table], computed_time)
 
         return self._write(target_table, df, mode)

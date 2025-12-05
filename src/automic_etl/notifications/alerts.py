@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Callable
-from datetime import datetime, timedelta
+from datetime import timedelta
 from enum import Enum
 import uuid
 
 import structlog
 
+from automic_etl.core.utils import utc_now
 from automic_etl.notifications.notifier import (
     Notifier,
     NotificationLevel,
@@ -252,13 +253,13 @@ class Alert:
     def acknowledge(self, by: str) -> None:
         """Acknowledge the alert."""
         self.status = AlertStatus.ACKNOWLEDGED
-        self.acknowledged_at = datetime.utcnow()
+        self.acknowledged_at = utc_now()
         self.acknowledged_by = by
 
     def resolve(self) -> None:
         """Mark the alert as resolved."""
         self.status = AlertStatus.RESOLVED
-        self.resolved_at = datetime.utcnow()
+        self.resolved_at = utc_now()
 
     def suppress(self) -> None:
         """Suppress the alert."""
@@ -269,7 +270,7 @@ class Alert:
         """Get alert duration."""
         if self.resolved_at:
             return self.resolved_at - self.triggered_at
-        return datetime.utcnow() - self.triggered_at
+        return utc_now() - self.triggered_at
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -373,7 +374,7 @@ class AlertManager:
             List of triggered alerts
         """
         triggered = []
-        now = datetime.utcnow()
+        now = utc_now()
 
         for rule in self.rules.values():
             if not rule.enabled:
@@ -421,7 +422,7 @@ class AlertManager:
             alert_id=alert_id,
             rule=rule,
             status=AlertStatus.ACTIVE,
-            triggered_at=datetime.utcnow(),
+            triggered_at=utc_now(),
             context=context,
             message=message,
         )
@@ -567,7 +568,7 @@ class AlertManager:
 
     def clear_resolved(self, older_than_hours: int = 24) -> int:
         """Clear resolved alerts older than specified hours."""
-        cutoff = datetime.utcnow() - timedelta(hours=older_than_hours)
+        cutoff = utc_now() - timedelta(hours=older_than_hours)
         to_remove = [
             a.alert_id for a in self.alerts.values()
             if a.status == AlertStatus.RESOLVED and a.resolved_at and a.resolved_at < cutoff

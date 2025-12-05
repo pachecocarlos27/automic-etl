@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import streamlit as st
-from datetime import datetime
 
 from automic_etl.db.auth_service import get_auth_service, AuthenticationError
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import UserModel, SessionModel, AuditLogModel
+from automic_etl.core.utils import utc_now
 
 
 def check_admin_access() -> bool:
@@ -57,7 +57,7 @@ def show_admin_overview():
         pending_users = session.query(UserModel).filter(UserModel.status == "pending").count()
         active_sessions = session.query(SessionModel).filter(
             SessionModel.is_valid == True,
-            SessionModel.expires_at > datetime.utcnow()
+            SessionModel.expires_at > utc_now()
         ).count()
 
     col1, col2, col3, col4 = st.columns(4)

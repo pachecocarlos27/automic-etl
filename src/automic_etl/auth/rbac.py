@@ -15,6 +15,7 @@ from automic_etl.auth.models import (
     RoleType,
     DEFAULT_ROLES,
 )
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -118,8 +119,7 @@ class RBACManager:
         if permissions is not None:
             role.permissions = permissions
 
-        from datetime import datetime
-        role.updated_at = datetime.utcnow()
+        role.updated_at = utc_now()
 
         return role
 

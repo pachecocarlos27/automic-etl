@@ -2,9 +2,30 @@
 
 from __future__ import annotations
 
+import httpx
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Any
+
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0)
+
+
+def _get_database_connectors() -> list[dict[str, Any]]:
+    """Fetch database connectors from API."""
+    try:
+        with _get_api_client() as client:
+            response = client.get("/connectors", params={"type": "database"})
+            if response.status_code == 200:
+                return response.json().get("connectors", [])
+            return []
+    except Exception:
+        return []
 
 
 def show_connectors_management_page():
@@ -215,41 +236,12 @@ def _show_database_connectors():
 
     st.markdown("---")
 
-    # Existing database connectors
-    databases = [
-        {
-            "name": "Production PostgreSQL",
-            "type": "PostgreSQL",
-            "host": "db.example.com:5432",
-            "database": "production",
-            "status": "connected",
-            "tables": 45,
-        },
-        {
-            "name": "Snowflake DW",
-            "type": "Snowflake",
-            "host": "account.snowflakecomputing.com",
-            "database": "ANALYTICS",
-            "status": "connected",
-            "tables": 120,
-        },
-        {
-            "name": "MySQL Replica",
-            "type": "MySQL",
-            "host": "replica.example.com:3306",
-            "database": "orders",
-            "status": "connected",
-            "tables": 28,
-        },
-        {
-            "name": "MongoDB Analytics",
-            "type": "MongoDB",
-            "host": "mongo.example.com:27017",
-            "database": "analytics",
-            "status": "error",
-            "tables": 0,
-        },
-    ]
+    # Fetch existing database connectors from API
+    databases = _get_database_connectors()
+
+    if not databases:
+        st.info("No database connectors configured yet.")
+        return
 
     for db in databases:
         with st.container():

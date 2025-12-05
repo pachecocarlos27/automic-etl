@@ -20,6 +20,7 @@ from automic_etl.llm.schema_generator import SchemaGenerator
 from automic_etl.llm.entity_extractor import EntityExtractor
 from automic_etl.llm.data_classifier import DataClassifier
 from automic_etl.llm.query_builder import QueryBuilder
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -94,7 +95,7 @@ class AugmentedETL:
         Returns:
             AugmentedResult with processed data and insights
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         tokens_used = 0
         insights: dict[str, Any] = {}
         recommendations: list[str] = []
@@ -163,7 +164,7 @@ class AugmentedETL:
                 "Data quality score is below 70%. Review null values and data consistency."
             )
 
-        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        processing_time = (utc_now() - start_time).total_seconds()
 
         return AugmentedResult(
             data=df,
@@ -192,7 +193,7 @@ class AugmentedETL:
         Returns:
             AugmentedResult with transformed data
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         prompt = f"""Analyze this DataFrame and generate Polars transformation code.
 
@@ -241,7 +242,7 @@ Respond with JSON:
                 except Exception as e:
                     self.logger.warning(f"Transform failed: {e}")
 
-        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        processing_time = (utc_now() - start_time).total_seconds()
 
         return AugmentedResult(
             data=transformed_df,
@@ -430,7 +431,7 @@ Respond with JSON:
         Returns:
             AugmentedResult with cleaned data
         """
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         cleaned_df = df.clone()
         actions_taken = []
 
@@ -483,7 +484,7 @@ Respond with JSON:
 
         actions_taken.append("Standardized null string values")
 
-        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        processing_time = (utc_now() - start_time).total_seconds()
 
         return AugmentedResult(
             data=cleaned_df,

@@ -11,6 +11,7 @@ import structlog
 from automic_etl.core.config import Settings
 from automic_etl.core.exceptions import LoadError
 from automic_etl.storage.iceberg import IcebergTableManager, schema_from_polars
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -73,7 +74,7 @@ class BronzeLayer:
             return 0
 
         # Add metadata columns
-        ingestion_time = datetime.utcnow()
+        ingestion_time = utc_now()
         df = self._add_metadata(
             df=df,
             source=source,

@@ -12,6 +12,7 @@ import polars as pl
 import structlog
 
 from automic_etl.core.config import Settings
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -173,7 +174,7 @@ class WatermarkManager:
             source_name=source_name,
             column=column,
             value=value,
-            updated_at=datetime.utcnow(),
+            updated_at=utc_now(),
             metadata=metadata or {},
         )
         self._save()

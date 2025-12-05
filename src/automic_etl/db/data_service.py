@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional, List
 import uuid
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session
 from automic_etl.db.models import DataTableModel
 
@@ -101,7 +101,7 @@ class DataService:
             if quality_score is not None:
                 table.quality_score = quality_score
 
-            table.updated_at = datetime.utcnow()
+            table.updated_at = utc_now()
             session.flush()
             session.expunge(table)
             return table
@@ -118,6 +118,52 @@ class DataService:
 
             session.delete(table)
             return True
+
+    def execute_sql(self, sql: str, limit: int = 100) -> dict:
+        """
+        Execute a SQL query against the data lakehouse.
+
+        This is a simplified implementation that returns mock data.
+        In production, this would execute against Delta Lake/Spark.
+        """
+        import re
+
+        sql_lower = sql.lower().strip()
+
+        # Extract table name from SQL
+        table_match = re.search(r'from\s+(\w+)\.(\w+)', sql_lower)
+        if not table_match:
+            table_match = re.search(r'from\s+(\w+)', sql_lower)
+
+        if table_match:
+            if len(table_match.groups()) == 2:
+                layer, table_name = table_match.groups()
+            else:
+                layer = "silver"
+                table_name = table_match.group(1)
+
+            # Try to get actual table metadata
+            table = self.get_table_by_name(table_name, layer)
+            if table and table.schema_definition:
+                columns = table.schema_definition.get("columns", [])
+                col_names = [c.get("name", f"col_{i}") for i, c in enumerate(columns)]
+
+                return {
+                    "columns": col_names or ["id", "name", "value"],
+                    "data": [],
+                    "row_count": 0,
+                    "execution_time_ms": 15,
+                    "bytes_scanned": 0,
+                }
+
+        # Default response for queries we can't parse
+        return {
+            "columns": ["result"],
+            "data": [],
+            "row_count": 0,
+            "execution_time_ms": 10,
+            "bytes_scanned": 0,
+        }
 
 
 def get_data_service() -> DataService:

@@ -9,6 +9,7 @@ import polars as pl
 import structlog
 
 from automic_etl.connectors.base import APIConnector
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -127,7 +128,7 @@ class SalesforceConnector(APIConnector):
         data = response.json()
         self._access_token = data["access_token"]
         self.instance_url = data.get("instance_url", self.instance_url)
-        self._token_expires_at = datetime.utcnow() + timedelta(hours=2)
+        self._token_expires_at = utc_now() + timedelta(hours=2)
 
     def disconnect(self) -> None:
         """Close Salesforce connection."""

@@ -12,7 +12,6 @@ This module provides:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, TypeVar, Generic
 from functools import wraps
@@ -20,6 +19,7 @@ import uuid
 
 import structlog
 
+from automic_etl.core.utils import utc_now
 from automic_etl.auth.models import User, PermissionType, RoleType
 from automic_etl.auth.tenant import (
     Company,
@@ -352,7 +352,7 @@ class ResourcePermission:
         """Check if permission has expired."""
         if not self.expires_at:
             return False
-        return datetime.utcnow() > self.expires_at
+        return utc_now() > self.expires_at
 
     @property
     def is_valid(self) -> bool:
@@ -970,7 +970,7 @@ class SecurityManager:
         if resource_access:
             role.resource_access = resource_access
 
-        role.updated_at = datetime.utcnow()
+        role.updated_at = utc_now()
 
         return role
 

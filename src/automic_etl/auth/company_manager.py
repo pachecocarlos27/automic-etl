@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 import json
 from pathlib import Path
 
 import structlog
 
+from automic_etl.core.utils import utc_now
 from automic_etl.auth.tenant import (
     Company,
     CompanyStatus,
@@ -407,7 +408,7 @@ class CompanyManager:
             company.postal_code = address.get("postal_code", company.postal_code)
             company.country = address.get("country", company.country)
 
-        company.updated_at = datetime.utcnow()
+        company.updated_at = utc_now()
         self._save_data()
 
         self._log_action(
@@ -435,7 +436,7 @@ class CompanyManager:
             if hasattr(company.settings, key):
                 setattr(company.settings, key, value)
 
-        company.updated_at = datetime.utcnow()
+        company.updated_at = utc_now()
         self._save_data()
 
         self._log_action(
@@ -481,12 +482,12 @@ class CompanyManager:
         # Handle trial status
         if tier == CompanyTier.TRIAL:
             company.status = CompanyStatus.TRIAL
-            company.trial_ends_at = datetime.utcnow() + timedelta(days=14)
+            company.trial_ends_at = utc_now() + timedelta(days=14)
         elif old_tier == CompanyTier.TRIAL:
             company.status = CompanyStatus.ACTIVE
             company.trial_ends_at = None
 
-        company.updated_at = datetime.utcnow()
+        company.updated_at = utc_now()
         self._save_data()
 
         self._log_action(
@@ -513,11 +514,11 @@ class CompanyManager:
 
         old_status = company.status
         company.status = status
-        company.updated_at = datetime.utcnow()
+        company.updated_at = utc_now()
 
         if reason:
             company.metadata["status_change_reason"] = reason
-            company.metadata["status_changed_at"] = datetime.utcnow().isoformat()
+            company.metadata["status_changed_at"] = utc_now().isoformat()
             company.metadata["status_changed_by"] = updated_by_user_id
 
         self._save_data()
@@ -564,8 +565,8 @@ class CompanyManager:
             del self.companies[company_id]
         else:
             company.status = CompanyStatus.INACTIVE
-            company.updated_at = datetime.utcnow()
-            company.metadata["deleted_at"] = datetime.utcnow().isoformat()
+            company.updated_at = utc_now()
+            company.metadata["deleted_at"] = utc_now().isoformat()
             company.metadata["deleted_by"] = deleted_by_user_id
 
         self._save_data()
@@ -616,7 +617,7 @@ class CompanyManager:
 
         self.memberships[membership.membership_id] = membership
         company.usage.user_count += 1
-        company.updated_at = datetime.utcnow()
+        company.updated_at = utc_now()
 
         self._save_data()
 
@@ -648,7 +649,7 @@ class CompanyManager:
         company = self.companies.get(company_id)
         if company:
             company.usage.user_count = max(0, company.usage.user_count - 1)
-            company.updated_at = datetime.utcnow()
+            company.updated_at = utc_now()
 
         del self.memberships[membership.membership_id]
         self._save_data()
@@ -747,7 +748,7 @@ class CompanyManager:
         new_owner_membership.is_owner = True
         new_owner_membership.is_company_admin = True
 
-        company.updated_at = datetime.utcnow()
+        company.updated_at = utc_now()
         self._save_data()
 
         self._log_action(
@@ -922,7 +923,7 @@ class CompanyManager:
         elif resource == "storage_gb":
             company.usage.storage_used_gb += amount
 
-        company.usage.last_updated = datetime.utcnow()
+        company.usage.last_updated = utc_now()
         self._save_data()
         return True
 
@@ -944,7 +945,7 @@ class CompanyManager:
         elif resource == "storage_gb":
             company.usage.storage_used_gb = max(0, company.usage.storage_used_gb - amount)
 
-        company.usage.last_updated = datetime.utcnow()
+        company.usage.last_updated = utc_now()
         self._save_data()
         return True
 
@@ -953,7 +954,7 @@ class CompanyManager:
         for company in self.companies.values():
             company.usage.jobs_today = 0
             company.usage.api_calls_today = 0
-            company.usage.last_updated = datetime.utcnow()
+            company.usage.last_updated = utc_now()
         self._save_data()
         self.logger.info("Reset daily usage for all companies")
 

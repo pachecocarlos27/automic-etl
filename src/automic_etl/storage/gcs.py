@@ -11,6 +11,7 @@ from google.oauth2 import service_account
 
 from automic_etl.core.exceptions import StorageError
 from automic_etl.storage.base import StorageBackend, StorageObject
+from automic_etl.core.utils import utc_now
 
 
 class GCSStorage(StorageBackend):
@@ -154,7 +155,7 @@ class GCSStorage(StorageBackend):
                 yield StorageObject(
                     key=blob.name,
                     size=blob.size or 0,
-                    last_modified=blob.updated or datetime.utcnow(),
+                    last_modified=blob.updated or utc_now(),
                     etag=blob.etag,
                     content_type=blob.content_type,
                     metadata=blob.metadata,
@@ -191,7 +192,7 @@ class GCSStorage(StorageBackend):
             return StorageObject(
                 key=full_path,
                 size=blob.size or 0,
-                last_modified=blob.updated or datetime.utcnow(),
+                last_modified=blob.updated or utc_now(),
                 etag=blob.etag,
                 content_type=blob.content_type,
                 metadata=blob.metadata,

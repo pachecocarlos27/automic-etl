@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, List, Optional
 
 from automic_etl.db.validation_service import get_validation_service
+from automic_etl.core.utils import utc_now
 
 
 def show_validation_page():
@@ -159,7 +160,7 @@ def _show_quality_dashboard():
 
             with col4:
                 if rule.last_run_at:
-                    time_diff = datetime.utcnow() - rule.last_run_at
+                    time_diff = utc_now() - rule.last_run_at
                     if time_diff.days > 0:
                         st.caption(f"{time_diff.days} days ago")
                     elif time_diff.seconds > 3600:
@@ -461,11 +462,11 @@ def _show_violations():
     try:
         since = None
         if v_date == "Last 24h":
-            since = datetime.utcnow() - timedelta(days=1)
+            since = utc_now() - timedelta(days=1)
         elif v_date == "Last 7 days":
-            since = datetime.utcnow() - timedelta(days=7)
+            since = utc_now() - timedelta(days=7)
         elif v_date == "Last 30 days":
-            since = datetime.utcnow() - timedelta(days=30)
+            since = utc_now() - timedelta(days=30)
 
         results = service.get_results(status="failed", limit=50)
 

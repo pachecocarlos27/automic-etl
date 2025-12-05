@@ -10,6 +10,7 @@ import polars as pl
 import structlog
 
 from automic_etl.validation.rules import ValidationRule, ValidationResult, Severity
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -195,7 +196,7 @@ class DataValidator:
 
         report = ValidationReport(
             dataset_name=dataset_name,
-            validation_time=datetime.utcnow(),
+            validation_time=utc_now(),
             total_rules=len(self.rules),
             passed_rules=passed,
             failed_rules=failed,

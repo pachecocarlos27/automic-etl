@@ -9,6 +9,7 @@ import structlog
 
 from automic_etl.core.config import Settings, get_settings
 from automic_etl.core.exceptions import LoadError
+from automic_etl.core.utils import utc_now
 from automic_etl.core.validation import (
     validate_in_choices,
     validate_non_empty_string,
@@ -414,7 +415,7 @@ class Lakehouse:
         if retention is None:
             retention = 90
 
-        cutoff = datetime.utcnow() - timedelta(days=retention)
+        cutoff = utc_now() - timedelta(days=retention)
         stats = {"expired_snapshots": 0, "tables_cleaned": 0}
 
         from automic_etl.storage.iceberg import IcebergTableManager

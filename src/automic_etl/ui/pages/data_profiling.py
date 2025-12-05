@@ -2,9 +2,45 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+import httpx
 import streamlit as st
 import polars as pl
 import json
+
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0)
+
+
+def _get_pii_findings(table_name: str) -> list[dict[str, Any]]:
+    """Fetch PII findings for a table from API."""
+    try:
+        with _get_api_client() as client:
+            response = client.get(f"/tables/{table_name}/pii-scan")
+            if response.status_code == 200:
+                return response.json().get("findings", [])
+            return []
+    except Exception:
+        return []
+
+
+def _get_sensitive_record_count(table_name: str) -> str:
+    """Get count of sensitive records in a table."""
+    try:
+        with _get_api_client() as client:
+            response = client.get(f"/tables/{table_name}/pii-scan/count")
+            if response.status_code == 200:
+                count = response.json().get("count", 0)
+                return f"{count:,}"
+            return "0"
+    except Exception:
+        return "0"
 
 
 def show_data_profiling_page():
@@ -222,46 +258,23 @@ def show_pii_results():
     # Overall risk
     col1, col2, col3 = st.columns(3)
     col1.metric("Overall Risk Level", "HIGH", delta="3 columns")
-    col2.metric("PII Columns Found", "4")
-    col3.metric("Sensitive Records", "125,432")
+    # Fetch PII findings from API
+    pii_findings = _get_pii_findings(table_name)
 
-    st.warning("⚠️ This dataset contains high-risk PII data. Consider applying masking or encryption.")
+    col2.metric("PII Columns Found", str(len(pii_findings)))
+    col3.metric("Sensitive Records", _get_sensitive_record_count(table_name))
+
+    if pii_findings:
+        st.warning("This dataset contains high-risk PII data. Consider applying masking or encryption.")
 
     st.markdown("---")
 
     # PII findings
     st.subheader("PII Findings")
 
-    pii_findings = [
-        {
-            "column": "full_name",
-            "pii_type": "PERSON_NAME",
-            "confidence": 0.98,
-            "sample": "John S***",
-            "recommendation": "Apply pseudonymization",
-        },
-        {
-            "column": "email",
-            "pii_type": "EMAIL",
-            "confidence": 0.99,
-            "sample": "j***@email.com",
-            "recommendation": "Hash or encrypt",
-        },
-        {
-            "column": "phone",
-            "pii_type": "PHONE_NUMBER",
-            "confidence": 0.95,
-            "sample": "555-***-****",
-            "recommendation": "Mask last digits",
-        },
-        {
-            "column": "address",
-            "pii_type": "ADDRESS",
-            "confidence": 0.92,
-            "sample": "*** Main St, ***",
-            "recommendation": "Generalize to region",
-        },
-    ]
+    if not pii_findings:
+        st.info("No PII detected in this table.")
+        return
 
     for finding in pii_findings:
         with st.expander(f"🔒 {finding['column']} - {finding['pii_type']}"):

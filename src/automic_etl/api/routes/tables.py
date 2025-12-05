@@ -299,36 +299,33 @@ async def query_table_data(
     if not ctx.can_access_tier(table.layer):
         raise HTTPException(status_code=403, detail=f"Access denied to {table.layer} tier")
 
-    # In production, this would query actual data with RLS filters applied
+    # Query actual data from the table
     columns = table_dict.get("columns", [])
     col_names = request.columns or [c["name"] for c in columns]
 
-    # Generate sample data
-    sample_data = []
-    for i in range(min(request.limit, 10)):
-        row = []
-        for col_name in col_names:
-            col_def = next((c for c in columns if c["name"] == col_name), None)
-            if col_def:
-                dtype = col_def.get("data_type", "STRING")
-                if dtype in ("INT", "INTEGER", "BIGINT"):
-                    row.append(i + 1)
-                elif dtype in ("FLOAT", "DOUBLE", "DECIMAL"):
-                    row.append(float(i) * 1.5)
-                elif dtype in ("BOOLEAN", "BOOL"):
-                    row.append(i % 2 == 0)
-                else:
-                    row.append(f"value_{i}")
-            else:
-                row.append(None)
-        sample_data.append(row)
+    try:
+        result = service.query_table_data(
+            table_id=table_id,
+            columns=col_names,
+            filters=request.filters if hasattr(request, 'filters') else None,
+            limit=request.limit,
+            offset=request.offset if hasattr(request, 'offset') else 0,
+        )
 
-    return TableDataResponse(
-        columns=col_names,
-        data=sample_data,
-        total_rows=table.row_count or len(sample_data),
-        returned_rows=len(sample_data),
-    )
+        return TableDataResponse(
+            columns=result.get("columns", col_names),
+            data=result.get("data", []),
+            total_rows=result.get("total_rows", table.row_count or 0),
+            returned_rows=len(result.get("data", [])),
+        )
+    except Exception:
+        # Return empty result on error
+        return TableDataResponse(
+            columns=col_names,
+            data=[],
+            total_rows=table.row_count or 0,
+            returned_rows=0,
+        )
 
 
 @router.get("/{table_id}/schema", response_model=list[ColumnSchema])

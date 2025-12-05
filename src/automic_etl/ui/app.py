@@ -1,4 +1,4 @@
-"""Main Streamlit application for Automic ETL."""
+"""Main Streamlit application for Automic ETL - Sleek, minimal design."""
 
 from __future__ import annotations
 
@@ -18,23 +18,23 @@ class NavItem:
     requires_admin: bool = False
 
 
-# Define navigation structure
+# Define navigation structure with cleaner icons
 NAV_ITEMS = [
-    NavItem("home", "Home", "🏠"),
-    NavItem("ingestion", "Data Ingestion", "📥"),
-    NavItem("processing", "Data Processing", "🔄"),
-    NavItem("pipelines", "Pipeline Builder", "🔧"),
-    NavItem("jobs", "Jobs & Orchestration", "📅"),
-    NavItem("profiling", "Data Profiling", "📊"),
-    NavItem("validation", "Data Validation", "✅"),
-    NavItem("lineage", "Data Lineage", "🌳"),
-    NavItem("query", "Query Studio", "💬"),
-    NavItem("ai_services", "AI Services", "🤖"),
-    NavItem("monitoring", "Monitoring", "📈"),
-    NavItem("alerts", "Alerts", "🔔"),
-    NavItem("connectors", "Connectors", "🔌"),
-    NavItem("integrations", "Integrations", "🔗"),
-    NavItem("settings", "Settings", "⚙️"),
+    NavItem("home", "Overview", "○"),
+    NavItem("ingestion", "Ingestion", "↓"),
+    NavItem("processing", "Processing", "⟳"),
+    NavItem("pipelines", "Pipelines", "⊞"),
+    NavItem("jobs", "Jobs", "◷"),
+    NavItem("profiling", "Profiling", "◈"),
+    NavItem("validation", "Validation", "✓"),
+    NavItem("lineage", "Lineage", "⋈"),
+    NavItem("query", "Query Studio", "▹"),
+    NavItem("ai_services", "AI Services", "◇"),
+    NavItem("monitoring", "Monitoring", "◉"),
+    NavItem("alerts", "Alerts", "◌"),
+    NavItem("connectors", "Connectors", "⊗"),
+    NavItem("integrations", "Integrations", "⊕"),
+    NavItem("settings", "Settings", "≡"),
 ]
 
 
@@ -42,7 +42,7 @@ def create_app():
     """Configure the Streamlit app settings."""
     st.set_page_config(
         page_title="Automic ETL",
-        page_icon="🔄",
+        page_icon="⚡",
         layout="wide",
         initial_sidebar_state="expanded",
         menu_items={
@@ -54,7 +54,7 @@ def create_app():
 
 
 def apply_custom_css():
-    """Apply custom CSS styling using the minimal theme system."""
+    """Apply sleek, minimal CSS styling."""
     from automic_etl.ui.theme import get_streamlit_css, get_theme, ThemeMode
 
     theme_mode = st.session_state.get("theme_mode", ThemeMode.LIGHT)
@@ -88,11 +88,10 @@ def get_page_function(page_key: str) -> Callable | None:
         "home": show_home_page,
     }
 
-    # Try to get from map first
     if page_key in page_map:
         return page_map[page_key]
 
-    # Try to import from pages module
+    # Import from pages module
     try:
         if page_key == "ingestion":
             from automic_etl.ui.pages.ingestion import show_ingestion_page
@@ -152,23 +151,21 @@ def run_app():
     """Run the main Streamlit application."""
     create_app()
 
-    # Initialize database and seed superadmin from environment variables
+    # Initialize database and seed superadmin
     from automic_etl.db.auth_service import get_auth_service
     auth_service = get_auth_service()
     auth_service.initialize()
 
-    # Initialize app state first
     init_app_state()
 
-    # Initialize centralized state manager
+    # Initialize centralized state
     from automic_etl.ui.state import get_state
     state = get_state()
     state.init_state()
 
-    # Apply custom CSS with theme
     apply_custom_css()
 
-    # Inject keyboard shortcuts and notifications
+    # Inject shortcuts and notifications
     from automic_etl.ui.shortcuts import inject_keyboard_shortcuts, add_aria_labels, render_skip_link
     from automic_etl.ui.notifications import inject_notification_styles, render_toast_container
     from automic_etl.ui.search import render_command_palette
@@ -179,7 +176,7 @@ def run_app():
     render_skip_link()
     render_command_palette()
 
-    # Import auth components
+    # Auth
     from automic_etl.ui.auth_pages import (
         check_authentication,
         show_login_page,
@@ -192,35 +189,27 @@ def run_app():
 
     init_session_state()
 
-    # Check authentication
     if not check_authentication():
         show_login_page()
         return
 
-    # Check for forced password change
     if st.session_state.get("force_password_change"):
         show_password_change_modal()
         return
 
-    # Authenticated user - show main app
     user = st.session_state.user
-
-    # Render toast notifications
     render_toast_container()
 
-    # Sidebar navigation
+    # Sidebar
     with st.sidebar:
         _render_sidebar_header()
-
-        # Global search in sidebar
         _render_sidebar_search()
+        st.markdown('<div style="height: 0.5rem;"></div>', unsafe_allow_html=True)
 
-        st.markdown("---")
-
-        # Build navigation menu
+        # Navigation
         current_page = st.session_state.get("current_page", "home")
         nav_keys = [item.key for item in NAV_ITEMS]
-        nav_labels = {item.key: f"{item.icon} {item.label}" for item in NAV_ITEMS}
+        nav_labels = {item.key: f"{item.label}" for item in NAV_ITEMS}
 
         page = st.radio(
             "Navigation",
@@ -234,7 +223,10 @@ def run_app():
         if page != current_page and page in nav_keys:
             navigate_to(page)
 
-        # User menu
+        # Spacer
+        st.markdown('<div style="flex: 1;"></div>', unsafe_allow_html=True)
+
+        # User menu at bottom
         show_user_menu()
 
     # Route to page
@@ -242,24 +234,24 @@ def run_app():
 
 
 def _render_sidebar_header():
-    """Render minimal sidebar header."""
+    """Render sleek sidebar header."""
     st.markdown("""
-    <div style="padding: 1.25rem 1rem 0.75rem;">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
+    <div style="padding: 1rem 0.75rem 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
             <div style="
-                width: 36px;
-                height: 36px;
-                background: #2563EB;
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
                 border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
             ">
-                <span style="font-size: 1.125rem;">⚡</span>
+                <span style="font-size: 1rem; color: white;">⚡</span>
             </div>
             <div>
-                <div style="font-size: 1.125rem; font-weight: 700; color: white; letter-spacing: -0.02em;">Automic</div>
-                <div style="font-size: 0.6875rem; color: #6B7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">ETL Platform</div>
+                <div style="font-size: 1rem; font-weight: 600; color: white; letter-spacing: -0.01em;">Automic</div>
             </div>
         </div>
     </div>
@@ -267,12 +259,12 @@ def _render_sidebar_header():
 
 
 def _render_sidebar_search():
-    """Render the global search bar in sidebar."""
+    """Render minimal search bar."""
     from automic_etl.ui.search import get_global_search
 
     query = st.text_input(
         "Search",
-        placeholder="🔍 Search... (Ctrl+K)",
+        placeholder="Search...",
         key="sidebar_search",
         label_visibility="collapsed",
     )
@@ -282,10 +274,12 @@ def _render_sidebar_search():
         results = search.search(query)
 
         if results:
-            st.markdown("##### Quick Results")
-            for result in results[:5]:
+            st.markdown("""
+            <p style="font-size: 0.7rem; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0.25rem; margin-bottom: 0.5rem;">Results</p>
+            """, unsafe_allow_html=True)
+            for result in results[:4]:
                 if st.button(
-                    f"{result.icon} {result.title}",
+                    f"{result.title}",
                     key=f"search_{result.title}_{result.type}",
                     use_container_width=True,
                 ):
@@ -293,8 +287,7 @@ def _render_sidebar_search():
 
 
 def _route_to_page(current_page: str, admin_func: Callable, profile_func: Callable):
-    """Route to the appropriate page based on current_page."""
-    # Handle special pages first
+    """Route to the appropriate page."""
     if current_page == "admin":
         admin_func()
         return
@@ -302,240 +295,196 @@ def _route_to_page(current_page: str, admin_func: Callable, profile_func: Callab
         profile_func()
         return
 
-    # Get page function
     page_func = get_page_function(current_page)
 
     if page_func:
         page_func()
     else:
-        # Find the nav item for placeholder
         nav_item = next((item for item in NAV_ITEMS if item.key == current_page), None)
         if nav_item:
             show_placeholder_page(nav_item.label, f"Manage {nav_item.label.lower()}")
         else:
-            show_placeholder_page("Unknown Page", "Page not found")
+            show_placeholder_page("Not Found", "Page not found")
 
 
 def show_home_page():
-    """Display Material Design 3 home dashboard."""
+    """Display sleek, minimal home dashboard."""
     user = st.session_state.user
-    
+
+    # Page header
     st.markdown(f"""
-    <div style="margin-bottom: 2.5rem;">
-        <h1 style="font-size: 2rem; font-weight: 700; color: #212121; margin: 0 0 0.5rem; letter-spacing: -0.03em; font-family: 'Inter', sans-serif;">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.625rem; font-weight: 600; color: var(--text); margin: 0 0 0.25rem; letter-spacing: -0.02em;">
             Welcome back, {user.first_name or user.username}
         </h1>
-        <p style="font-size: 1rem; color: #757575; margin: 0; font-family: 'Inter', sans-serif;">Your data lakehouse overview</p>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">Your data lakehouse at a glance</p>
     </div>
     """, unsafe_allow_html=True)
-    
+
+    # Stats row
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
-        st.metric("Tables", "12", "+2")
+        _render_stat_card("Tables", "12", "+2 this week", "positive")
     with col2:
-        st.metric("Pipelines", "5", "1 active")
+        _render_stat_card("Pipelines", "5", "1 running", "neutral")
     with col3:
-        st.metric("Data Size", "2.4 GB", "+450 MB")
+        _render_stat_card("Storage", "2.4 GB", "+450 MB", "positive")
     with col4:
-        st.metric("AI Queries", "156", "+23 today")
-    
-    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
-    
+        _render_stat_card("Queries", "156", "+23 today", "positive")
+
+    st.markdown('<div style="height: 1.5rem;"></div>', unsafe_allow_html=True)
+
+    # Main content
     col_main, col_side = st.columns([2, 1])
-    
+
     with col_main:
-        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Data Layers</h4>""", unsafe_allow_html=True)
-        
+        # Data layers
+        st.markdown("""
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 1rem; letter-spacing: -0.01em;">Data Layers</h3>
+        """, unsafe_allow_html=True)
+
         layer_cols = st.columns(3)
-        
+
         with layer_cols[0]:
-            st.markdown("""
-            <div style="background: #EFEBE9; border-radius: 16px; padding: 1.25rem; border-left: 4px solid #8D6E63; transition: box-shadow 0.2s ease;">
-                <div style="font-weight: 600; color: #212121; margin-bottom: 0.5rem; font-size: 1rem;">Bronze</div>
-                <div style="font-size: 0.8125rem; color: #757575; margin-bottom: 0.75rem;">Raw data</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9E9E9E;">
-                    <span>8 tables</span>
-                    <span>1.2 GB</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            _render_layer_card("Bronze", "Raw ingested data", "8", "1.2 GB", "#A16207", "#FEF9C3")
         with layer_cols[1]:
-            st.markdown("""
-            <div style="background: #ECEFF1; border-radius: 16px; padding: 1.25rem; border-left: 4px solid #78909C; transition: box-shadow 0.2s ease;">
-                <div style="font-weight: 600; color: #212121; margin-bottom: 0.5rem; font-size: 1rem;">Silver</div>
-                <div style="font-size: 0.8125rem; color: #757575; margin-bottom: 0.75rem;">Cleaned</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9E9E9E;">
-                    <span>6 tables</span>
-                    <span>890 MB</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            _render_layer_card("Silver", "Cleaned & validated", "6", "890 MB", "#6B7280", "#F3F4F6")
         with layer_cols[2]:
-            st.markdown("""
-            <div style="background: #FFF8E1; border-radius: 16px; padding: 1.25rem; border-left: 4px solid #FFA000; transition: box-shadow 0.2s ease;">
-                <div style="font-weight: 600; color: #212121; margin-bottom: 0.5rem; font-size: 1rem;">Gold</div>
-                <div style="font-size: 0.8125rem; color: #757575; margin-bottom: 0.75rem;">Enriched</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; color: #9E9E9E;">
-                    <span>4 tables</span>
-                    <span>320 MB</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
-        
-        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Recent Activity</h4>""", unsafe_allow_html=True)
-        
+            _render_layer_card("Gold", "Business-ready", "4", "320 MB", "#CA8A04", "#FEF3C7")
+
+        st.markdown('<div style="height: 1.5rem;"></div>', unsafe_allow_html=True)
+
+        # Recent activity
+        st.markdown("""
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 1rem; letter-spacing: -0.01em;">Recent Activity</h3>
+        """, unsafe_allow_html=True)
+
         activities = [
-            ("Data ingested", "sales_data.csv", "2m ago", "#2E7D32", "#E8F5E9"),
-            ("Pipeline completed", "Bronze to Silver", "5m ago", "#3F51B5", "#E8EAF6"),
-            ("Query executed", "Top customers", "12m ago", "#009688", "#E0F2F1"),
-            ("Pipeline failed", "daily_etl", "1h ago", "#D32F2F", "#FFEBEE"),
+            ("Data ingested", "sales_data.csv uploaded", "2m ago", "success"),
+            ("Pipeline completed", "Bronze → Silver transform", "5m ago", "info"),
+            ("Query executed", "Top customers analysis", "12m ago", "neutral"),
+            ("Alert triggered", "Data quality threshold", "1h ago", "warning"),
         ]
-        
-        for title, detail, time, color, bg in activities:
-            st.markdown(f"""
-            <div style="display: flex; align-items: center; padding: 0.875rem 1rem; margin-bottom: 0.5rem; background: {bg}; border-radius: 12px; transition: all 0.15s ease;">
-                <div style="width: 8px; height: 8px; border-radius: 50%; background: {color}; margin-right: 1rem;"></div>
-                <div style="flex: 1;">
-                    <div style="font-size: 0.875rem; color: #212121; font-weight: 500;">{title}</div>
-                    <div style="font-size: 0.75rem; color: #757575;">{detail}</div>
-                </div>
-                <div style="font-size: 0.75rem; color: #9E9E9E; font-weight: 500;">{time}</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
+
+        for title, detail, time, status in activities:
+            _render_activity_item(title, detail, time, status)
+
     with col_side:
-        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Quick Actions</h4>""", unsafe_allow_html=True)
-        
-        if st.button("Upload Data", use_container_width=True, type="primary"):
+        # Quick actions
+        st.markdown("""
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 1rem; letter-spacing: -0.01em;">Quick Actions</h3>
+        """, unsafe_allow_html=True)
+
+        if st.button("↓ Upload Data", use_container_width=True, type="primary"):
             navigate_to("ingestion")
-        if st.button("Create Pipeline", use_container_width=True):
+        if st.button("⊞ New Pipeline", use_container_width=True):
             navigate_to("pipelines")
-        if st.button("Query Data", use_container_width=True):
+        if st.button("▹ Query Data", use_container_width=True):
             navigate_to("query")
-        
-        st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
-        
-        st.markdown("""<h4 style="font-size: 1.125rem; font-weight: 600; color: #212121; margin: 0 0 1rem; font-family: 'Inter', sans-serif;">Data Quality</h4>""", unsafe_allow_html=True)
+
+        st.markdown('<div style="height: 1.5rem;"></div>', unsafe_allow_html=True)
+
+        # Data quality
+        st.markdown("""
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 0.75rem; letter-spacing: -0.01em;">Data Quality</h3>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style="background: var(--surface-muted); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Overall Score</span>
+                <span style="font-size: 1.25rem; font-weight: 600; color: var(--success);">87%</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         st.progress(0.87)
-        st.markdown("""<p style="font-size: 0.8125rem; color: #757575; margin-top: 0.5rem;">87% overall score</p>""", unsafe_allow_html=True)
+
+        st.markdown('<div style="height: 1rem;"></div>', unsafe_allow_html=True)
+
+        # System status
+        st.markdown("""
+        <div style="background: var(--surface-muted); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></div>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">All systems operational</span>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Last checked: Just now</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 
-def show_connectors_page():
-    """Display the connectors management page."""
-    st.title("Connectors")
-    st.markdown("Manage your data source and destination connectors.")
+def _render_stat_card(label: str, value: str, delta: str, delta_type: str):
+    """Render a minimal stat card."""
+    delta_colors = {
+        "positive": "var(--success)",
+        "negative": "var(--error)",
+        "neutral": "var(--text-muted)",
+    }
+    color = delta_colors.get(delta_type, "var(--text-muted)")
 
-    tab1, tab2, tab3 = st.tabs(["Databases", "APIs", "Cloud Storage"])
+    st.markdown(f"""
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem;">
+        <p style="font-size: 0.7rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.5rem;">{label}</p>
+        <p style="font-size: 1.75rem; font-weight: 700; color: var(--text); margin: 0 0 0.25rem; letter-spacing: -0.02em;">{value}</p>
+        <p style="font-size: 0.75rem; color: {color}; margin: 0;">{delta}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with tab1:
-        st.markdown("### Database Connectors")
 
-        col1, col2 = st.columns(2)
+def _render_layer_card(name: str, description: str, tables: str, size: str, accent_color: str, bg_color: str):
+    """Render a data layer card."""
+    st.markdown(f"""
+    <div style="background: {bg_color}; border-radius: 12px; padding: 1.25rem; border-left: 3px solid {accent_color};">
+        <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0 0 0.25rem;">{name}</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 0.75rem;">{description}</p>
+        <div style="display: flex; justify-content: space-between;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">{tables} tables</span>
+            <span style="font-size: 0.75rem; color: var(--text-secondary);">{size}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        with col1:
-            with st.expander("PostgreSQL", expanded=True):
-                st.markdown("Connect to PostgreSQL databases")
-                st.text_input("Host", placeholder="localhost", key="pg_host")
-                st.number_input("Port", value=5432, key="pg_port")
-                st.text_input("Database", placeholder="mydb", key="pg_db")
-                st.text_input("Username", placeholder="postgres", key="pg_user")
-                st.text_input("Password", type="password", key="pg_pass")
-                if st.button("Test Connection", key="pg_test"):
-                    st.success("Connection successful!")
 
-            with st.expander("Snowflake"):
-                st.markdown("Connect to Snowflake data warehouse")
-                st.text_input("Account", placeholder="account.region", key="sf_account")
-                st.text_input("Database", placeholder="MYDB", key="sf_db")
-                st.text_input("Warehouse", placeholder="COMPUTE_WH", key="sf_warehouse")
+def _render_activity_item(title: str, detail: str, time: str, status: str):
+    """Render an activity item."""
+    status_colors = {
+        "success": "var(--success)",
+        "warning": "var(--warning)",
+        "error": "var(--error)",
+        "info": "var(--accent)",
+        "neutral": "var(--text-muted)",
+    }
+    color = status_colors.get(status, "var(--text-muted)")
 
-        with col2:
-            with st.expander("BigQuery"):
-                st.markdown("Connect to Google BigQuery")
-                st.text_input("Project ID", placeholder="my-project", key="bq_project")
-                st.text_input("Dataset", placeholder="my_dataset", key="bq_dataset")
-                st.file_uploader("Service Account JSON", key="bq_sa")
-
-            with st.expander("MySQL"):
-                st.markdown("Connect to MySQL databases")
-                st.text_input("Host", placeholder="localhost", key="mysql_host")
-                st.number_input("Port", value=3306, key="mysql_port")
-
-    with tab2:
-        st.markdown("### API Connectors")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            with st.expander("Salesforce"):
-                st.markdown("Connect to Salesforce CRM")
-                st.text_input("Consumer Key", key="sf_consumer_key")
-                st.text_input("Consumer Secret", type="password", key="sf_consumer_secret")
-                st.text_input("Username", key="sf_username")
-                st.text_input("Security Token", type="password", key="sf_token")
-
-            with st.expander("HubSpot"):
-                st.markdown("Connect to HubSpot CRM")
-                st.text_input("API Key", type="password", key="hs_key")
-
-        with col2:
-            with st.expander("Stripe"):
-                st.markdown("Connect to Stripe payments")
-                st.text_input("API Key", type="password", key="stripe_key")
-
-            with st.expander("REST API"):
-                st.markdown("Connect to generic REST APIs")
-                st.text_input("Base URL", placeholder="https://api.example.com", key="rest_url")
-                st.selectbox("Auth Type", ["None", "API Key", "Bearer Token", "Basic Auth", "OAuth2"], key="rest_auth")
-
-    with tab3:
-        st.markdown("### Cloud Storage")
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            with st.expander("AWS S3"):
-                st.markdown("Connect to Amazon S3")
-                st.text_input("Access Key ID", key="aws_key")
-                st.text_input("Secret Access Key", type="password", key="aws_secret")
-                st.text_input("Region", placeholder="us-east-1", key="aws_region")
-                st.text_input("Bucket", placeholder="my-bucket", key="aws_bucket")
-
-        with col2:
-            with st.expander("Google Cloud Storage"):
-                st.markdown("Connect to GCS")
-                st.text_input("Project ID", key="gcs_project")
-                st.file_uploader("Service Account JSON", key="gcs_sa")
-                st.text_input("Bucket", placeholder="my-bucket", key="gcs_bucket")
-
-        with col3:
-            with st.expander("Azure Blob Storage"):
-                st.markdown("Connect to Azure Blob")
-                st.text_input("Account Name", key="azure_account")
-                st.text_input("Account Key", type="password", key="azure_key")
-                st.text_input("Container", placeholder="my-container", key="azure_container")
+    st.markdown(f"""
+    <div style="display: flex; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--border);">
+        <div style="width: 6px; height: 6px; background: {color}; border-radius: 50%; margin-top: 6px; margin-right: 0.75rem; flex-shrink: 0;"></div>
+        <div style="flex: 1; min-width: 0;">
+            <p style="font-size: 0.875rem; color: var(--text); margin: 0; font-weight: 500;">{title}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">{detail}</p>
+        </div>
+        <span style="font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0;">{time}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def show_placeholder_page(title: str, description: str):
-    """Show a placeholder page for unimplemented features."""
-    st.title(title)
-    st.markdown(f"*{description}*")
-
-    st.info("This feature is coming soon. Check back for updates!")
-
-    st.markdown("---")
+    """Show a placeholder page."""
+    st.markdown(f"""
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.625rem; font-weight: 600; color: var(--text); margin: 0 0 0.25rem; letter-spacing: -0.02em;">{title}</h1>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">{description}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("""
-    ### Coming Features:
-    - Full implementation of this module
-    - Integration with all connectors
-    - AI-powered automation
-    """)
+    <div style="text-align: center; padding: 4rem 2rem; background: var(--surface-muted); border-radius: 12px; border: 2px dashed var(--border);">
+        <p style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.5;">🚧</p>
+        <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text); margin: 0 0 0.5rem;">Coming Soon</h3>
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">This feature is under development</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

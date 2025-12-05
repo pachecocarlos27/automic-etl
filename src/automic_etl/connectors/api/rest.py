@@ -11,6 +11,7 @@ import polars as pl
 import structlog
 
 from automic_etl.connectors.base import APIConnector
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -345,7 +346,7 @@ class WebhookReceiver:
     def process(self, payload: dict[str, Any]) -> None:
         """Process incoming webhook payload."""
         self._buffer.append({
-            "received_at": datetime.utcnow().isoformat(),
+            "received_at": utc_now().isoformat(),
             "payload": payload,
         })
 

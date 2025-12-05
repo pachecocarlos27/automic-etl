@@ -1,4 +1,4 @@
-"""Reusable UI components for Automic ETL."""
+"""Sleek, minimal UI components for Automic ETL."""
 
 from __future__ import annotations
 
@@ -8,49 +8,105 @@ import streamlit as st
 
 
 # ============================================================================
-# Status and Badge Components
+# Page Layout Components
+# ============================================================================
+
+def page_header(
+    title: str,
+    description: str | None = None,
+    actions: list[tuple[str, str, Callable]] | None = None,
+) -> None:
+    """
+    Display a clean page header.
+
+    Args:
+        title: Page title
+        description: Optional description
+        actions: List of (label, type, callback) for action buttons
+    """
+    st.markdown(f"""
+    <div class="page-header">
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--text); margin: 0 0 0.25rem; letter-spacing: -0.02em;">{title}</h1>
+        {f'<p style="font-size: 0.95rem; color: var(--text-muted); margin: 0;">{description}</p>' if description else ''}
+    </div>
+    """, unsafe_allow_html=True)
+
+    if actions:
+        cols = st.columns([1] * len(actions) + [max(1, 6 - len(actions))])
+        for i, (label, btn_type, callback) in enumerate(actions):
+            with cols[i]:
+                if st.button(label, type=btn_type, use_container_width=True):
+                    callback()
+
+
+def section_header(
+    title: str,
+    description: str | None = None,
+    badge: str | None = None,
+) -> None:
+    """Display a section header."""
+    badge_html = f'<span class="badge badge-neutral" style="margin-left: 8px;">{badge}</span>' if badge else ''
+    st.markdown(f"""
+    <div style="margin: 1.5rem 0 1rem;">
+        <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text); margin: 0; display: inline-flex; align-items: center;">
+            {title}{badge_html}
+        </h3>
+        {f'<p style="font-size: 0.875rem; color: var(--text-muted); margin: 0.25rem 0 0;">{description}</p>' if description else ''}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ============================================================================
+# Status & Badge Components
 # ============================================================================
 
 def status_badge(
     status: str,
-    variant: Literal["success", "warning", "danger", "info"] | None = None,
+    variant: Literal["success", "warning", "error", "info", "neutral"] | None = None,
+    size: Literal["sm", "md"] = "md",
 ) -> None:
     """
-    Display a status badge.
+    Display a minimal status badge.
 
     Args:
-        status: Status text to display
+        status: Status text
         variant: Badge variant (auto-detected if not provided)
+        size: Badge size
     """
     if variant is None:
-        # Auto-detect variant from status text
         status_lower = status.lower()
-        if status_lower in ("success", "completed", "active", "running", "healthy", "online"):
+        if status_lower in ("success", "completed", "active", "running", "healthy", "online", "connected"):
             variant = "success"
-        elif status_lower in ("warning", "pending", "queued", "degraded"):
+        elif status_lower in ("warning", "pending", "queued", "degraded", "paused"):
             variant = "warning"
-        elif status_lower in ("error", "failed", "inactive", "stopped", "offline", "critical"):
-            variant = "danger"
-        else:
+        elif status_lower in ("error", "failed", "inactive", "stopped", "offline", "critical", "disconnected"):
+            variant = "error"
+        elif status_lower in ("info", "processing", "syncing"):
             variant = "info"
+        else:
+            variant = "neutral"
 
-    st.markdown(
-        f'<span class="status-badge status-{variant}">{status}</span>',
-        unsafe_allow_html=True
-    )
+    padding = "3px 8px" if size == "sm" else "4px 10px"
+    font_size = "0.7rem" if size == "sm" else "0.75rem"
+
+    st.markdown(f"""
+    <span class="badge badge-{variant}" style="padding: {padding}; font-size: {font_size};">{status}</span>
+    """, unsafe_allow_html=True)
 
 
 def tier_badge(tier: Literal["bronze", "silver", "gold"]) -> None:
     """Display a data tier badge."""
-    tier_labels = {
-        "bronze": "Bronze",
-        "silver": "Silver",
-        "gold": "Gold",
-    }
-    st.markdown(
-        f'<span class="tier-badge tier-{tier}">{tier_labels.get(tier, tier)}</span>',
-        unsafe_allow_html=True
-    )
+    labels = {"bronze": "Bronze", "silver": "Silver", "gold": "Gold"}
+    st.markdown(f"""
+    <span class="badge tier-{tier}">{labels.get(tier, tier)}</span>
+    """, unsafe_allow_html=True)
+
+
+def count_badge(count: int, variant: str = "neutral") -> None:
+    """Display a count badge."""
+    st.markdown(f"""
+    <span class="badge badge-{variant}" style="min-width: 20px; text-align: center;">{count}</span>
+    """, unsafe_allow_html=True)
 
 
 # ============================================================================
@@ -58,210 +114,110 @@ def tier_badge(tier: Literal["bronze", "silver", "gold"]) -> None:
 # ============================================================================
 
 def card(
+    content: Callable | None = None,
     title: str | None = None,
     subtitle: str | None = None,
-    content: Callable | None = None,
-    icon: str | None = None,
-    footer: str | None = None,
+    footer: Callable | None = None,
+    padding: str = "1.25rem",
+    hover: bool = False,
 ) -> None:
     """
-    Display a styled card.
+    Display a minimal card container.
 
     Args:
-        title: Card title
-        subtitle: Card subtitle
         content: Function to render card content
-        icon: Optional emoji icon
-        footer: Optional footer text
+        title: Optional card title
+        subtitle: Optional subtitle
+        footer: Optional footer render function
+        padding: Card padding
+        hover: Enable hover effect
     """
-    with st.container():
-        st.markdown("""
-        <div style="
-            background: var(--surface);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: var(--shadow-sm);
-        ">
+    hover_class = "card-hover" if hover else ""
+
+    st.markdown(f"""
+    <div class="card {hover_class}" style="padding: {padding};">
+    """, unsafe_allow_html=True)
+
+    if title:
+        st.markdown(f"""
+        <div style="margin-bottom: {'1rem' if content else '0'};">
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 0;">{title}</h4>
+            {f'<p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0;">{subtitle}</p>' if subtitle else ''}
+        </div>
         """, unsafe_allow_html=True)
 
-        if title:
-            header = f"{icon} {title}" if icon else title
-            st.markdown(f"### {header}")
-            if subtitle:
-                st.caption(subtitle)
-            st.markdown("---")
+    if content:
+        content()
 
-        if content:
-            content()
+    if footer:
+        st.markdown('<div style="border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem;">', unsafe_allow_html=True)
+        footer()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        if footer:
-            st.markdown("---")
-            st.caption(footer)
-
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-def stat_card(
+def metric_card(
     label: str,
     value: str | int | float,
     delta: str | float | None = None,
-    delta_color: Literal["normal", "inverse", "off"] = "normal",
+    delta_type: Literal["positive", "negative", "neutral"] = "neutral",
     icon: str | None = None,
-    help_text: str | None = None,
+    trend_data: list[float] | None = None,
 ) -> None:
     """
-    Display a statistics card with optional delta.
+    Display a clean metric card.
 
     Args:
         label: Metric label
         value: Metric value
-        delta: Optional change value
-        delta_color: Delta color mode
-        icon: Optional emoji icon
-        help_text: Optional help tooltip
+        delta: Optional change indicator
+        delta_type: Type of change
+        icon: Optional icon
+        trend_data: Optional trend sparkline data
     """
+    delta_colors = {
+        "positive": "var(--success)",
+        "negative": "var(--error)",
+        "neutral": "var(--text-muted)",
+    }
+    delta_color = delta_colors.get(delta_type, "var(--text-muted)")
+    delta_icon = "+" if delta_type == "positive" else ("-" if delta_type == "negative" else "")
+
     st.markdown(f"""
-    <div style="
-        background: linear-gradient(135deg, var(--surface) 0%, var(--background) 100%);
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius-lg);
-        padding: 1.25rem;
-        box-shadow: var(--shadow-sm);
-    ">
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-            {f'<span style="font-size: 1.5rem;">{icon}</span>' if icon else ''}
-            <span style="
-                color: var(--text-secondary);
-                font-size: 0.875rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            ">{label}</span>
+    <div class="metric-card">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+            <div>
+                <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.5rem;">
+                    {f'{icon} ' if icon else ''}{label}
+                </p>
+                <p style="font-size: 1.75rem; font-weight: 700; color: var(--text); margin: 0; letter-spacing: -0.02em;">
+                    {value}
+                </p>
+            </div>
+            {f'<span style="font-size: 0.8rem; font-weight: 500; color: {delta_color};">{delta_icon}{delta}</span>' if delta else ''}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.metric(
-        label="",
-        value=value,
-        delta=delta,
-        delta_color=delta_color,
-        help=help_text,
-    )
 
-
-def info_card(
-    title: str,
-    items: dict[str, Any],
-    icon: str | None = None,
-) -> None:
+def stat_row(stats: list[tuple[str, str | int, str | None]]) -> None:
     """
-    Display an information card with key-value pairs.
+    Display a row of statistics.
 
     Args:
-        title: Card title
-        items: Dictionary of label-value pairs
-        icon: Optional emoji icon
+        stats: List of (label, value, icon) tuples
     """
-    header = f"{icon} {title}" if icon else title
-    st.markdown(f"#### {header}")
-
-    for label, value in items.items():
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown(f"**{label}:**")
-        with col2:
-            if isinstance(value, datetime):
-                st.markdown(value.strftime("%Y-%m-%d %H:%M"))
-            elif isinstance(value, bool):
-                st.markdown("Yes" if value else "No")
-            else:
-                st.markdown(str(value))
-
-
-# ============================================================================
-# Navigation Components
-# ============================================================================
-
-def page_header(
-    title: str,
-    subtitle: str | None = None,
-    icon: str | None = None,
-    actions: list[tuple[str, Callable]] | None = None,
-) -> None:
-    """
-    Display a page header with optional actions.
-
-    Args:
-        title: Page title
-        subtitle: Optional subtitle
-        icon: Optional emoji icon
-        actions: List of (label, callback) tuples for action buttons
-    """
-    col1, col2 = st.columns([3, 1])
-
-    with col1:
-        header = f"{icon} {title}" if icon else title
-        st.markdown(f"# {header}")
-        if subtitle:
-            st.markdown(f"*{subtitle}*")
-
-    with col2:
-        if actions:
-            for label, callback in actions:
-                if st.button(label, use_container_width=True):
-                    callback()
-
-
-def breadcrumb(items: list[tuple[str, str | None]]) -> None:
-    """
-    Display a breadcrumb navigation.
-
-    Args:
-        items: List of (label, page_key) tuples. Use None for current page.
-    """
-    parts = []
-    for i, (label, page_key) in enumerate(items):
-        if page_key and i < len(items) - 1:
-            parts.append(f'<a href="#{page_key}" style="color: var(--primary); text-decoration: none;">{label}</a>')
-        else:
-            parts.append(f'<span style="color: var(--text-primary);">{label}</span>')
-
-    breadcrumb_html = ' <span style="color: var(--text-muted); margin: 0 0.5rem;">/</span> '.join(parts)
-
-    st.markdown(
-        f'<nav style="margin-bottom: 1rem; font-size: 0.875rem;">{breadcrumb_html}</nav>',
-        unsafe_allow_html=True
-    )
-
-
-def tabs_with_icons(
-    tabs: list[tuple[str, str]],
-    default_index: int = 0,
-) -> str:
-    """
-    Create tabs with emoji icons.
-
-    Args:
-        tabs: List of (icon + label, key) tuples
-        default_index: Default selected tab index
-
-    Returns:
-        Selected tab key
-    """
-    tab_labels = [t[0] for t in tabs]
-    tab_keys = [t[1] for t in tabs]
-
-    selected = st.tabs(tab_labels)
-
-    for i, tab in enumerate(selected):
-        with tab:
-            if i == default_index:
-                return tab_keys[i]
-
-    return tab_keys[default_index]
+    cols = st.columns(len(stats))
+    for i, (label, value, icon) in enumerate(stats):
+        with cols[i]:
+            st.markdown(f"""
+            <div style="text-align: center; padding: 1rem;">
+                {f'<div style="font-size: 1.5rem; margin-bottom: 0.5rem;">{icon}</div>' if icon else ''}
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text);">{value}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">{label}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
 
 # ============================================================================
@@ -271,194 +227,109 @@ def tabs_with_icons(
 def data_table(
     data: list[dict],
     columns: list[str] | None = None,
-    show_index: bool = False,
-    selectable: bool = False,
-    on_select: Callable[[list[int]], None] | None = None,
-) -> list[int] | None:
+    hide_index: bool = True,
+) -> None:
     """
-    Display a styled data table.
+    Display a clean data table.
 
     Args:
         data: List of dictionaries
-        columns: Columns to display (all if None)
-        show_index: Whether to show row index
-        selectable: Whether rows are selectable
-        on_select: Callback when selection changes
-
-    Returns:
-        Selected row indices if selectable
+        columns: Columns to display
+        hide_index: Hide row index
     """
     import pandas as pd
 
     if not data:
-        st.info("No data to display")
-        return []
+        empty_state("No data", "No records to display")
+        return
 
     df = pd.DataFrame(data)
-
     if columns:
-        df = df[columns]
+        df = df[[c for c in columns if c in df.columns]]
 
-    if selectable:
-        selected = st.data_editor(
-            df,
-            hide_index=not show_index,
-            use_container_width=True,
-            num_rows="fixed",
-        )
-        return selected
-    else:
-        st.dataframe(
-            df,
-            hide_index=not show_index,
-            use_container_width=True,
-        )
-        return None
+    st.dataframe(df, hide_index=hide_index, use_container_width=True)
 
 
-def key_value_list(items: dict[str, Any], columns: int = 2) -> None:
+def key_value_display(items: dict[str, Any], columns: int = 2) -> None:
     """
-    Display a key-value list in columns.
+    Display key-value pairs in a clean layout.
 
     Args:
         items: Dictionary of key-value pairs
         columns: Number of columns
     """
     items_list = list(items.items())
-    rows = [items_list[i:i + columns] for i in range(0, len(items_list), columns)]
 
-    for row in rows:
+    for i in range(0, len(items_list), columns):
         cols = st.columns(columns)
-        for i, (key, value) in enumerate(row):
-            with cols[i]:
-                st.markdown(f"**{key}**")
-                if isinstance(value, datetime):
-                    st.markdown(value.strftime("%Y-%m-%d %H:%M:%S"))
-                elif isinstance(value, bool):
-                    status_badge("Yes" if value else "No", "success" if value else "danger")
-                elif value is None:
-                    st.markdown("*N/A*")
-                else:
-                    st.markdown(str(value))
+        for j, col in enumerate(cols):
+            if i + j < len(items_list):
+                key, value = items_list[i + j]
+                with col:
+                    st.markdown(f"""
+                    <div style="margin-bottom: 1rem;">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem; text-transform: uppercase; letter-spacing: 0.04em;">{key}</p>
+                        <p style="font-size: 0.9rem; color: var(--text); margin: 0; font-weight: 500;">{_format_value(value)}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 
-def json_viewer(data: dict | list, expanded: bool = True) -> None:
-    """
-    Display JSON data in an expandable viewer.
-
-    Args:
-        data: JSON-serializable data
-        expanded: Whether to expand by default
-    """
-    import json
-
-    with st.expander("JSON Data", expanded=expanded):
-        st.json(data)
+def _format_value(value: Any) -> str:
+    """Format a value for display."""
+    if value is None:
+        return '<span style="color: var(--text-muted);">-</span>'
+    elif isinstance(value, bool):
+        return "Yes" if value else "No"
+    elif isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M")
+    return str(value)
 
 
-# ============================================================================
-# Form Components
-# ============================================================================
-
-def search_box(
-    placeholder: str = "Search...",
-    key: str = "search",
-    on_change: Callable[[str], None] | None = None,
-) -> str:
-    """
-    Display a search input box.
-
-    Args:
-        placeholder: Input placeholder text
-        key: Session state key
-        on_change: Callback when value changes
-
-    Returns:
-        Current search value
-    """
-    value = st.text_input(
-        label="Search",
-        placeholder=placeholder,
-        key=key,
-        label_visibility="collapsed",
-    )
-
-    if on_change and value:
-        on_change(value)
-
-    return value
-
-
-def confirm_dialog(
+def list_item(
     title: str,
-    message: str,
-    confirm_label: str = "Confirm",
-    cancel_label: str = "Cancel",
-    danger: bool = False,
-) -> bool | None:
+    subtitle: str | None = None,
+    status: str | None = None,
+    meta: str | None = None,
+    actions: list[tuple[str, Callable]] | None = None,
+) -> None:
     """
-    Display a confirmation dialog.
+    Display a list item with optional actions.
 
     Args:
-        title: Dialog title
-        message: Dialog message
-        confirm_label: Confirm button label
-        cancel_label: Cancel button label
-        danger: Whether this is a dangerous action
-
-    Returns:
-        True if confirmed, False if cancelled, None if pending
+        title: Item title
+        subtitle: Optional subtitle
+        status: Optional status badge
+        meta: Optional meta information
+        actions: Optional action buttons
     """
-    st.markdown(f"### {title}")
-    st.markdown(message)
+    cols = st.columns([4, 2, 2] if actions else [4, 2])
 
-    col1, col2 = st.columns(2)
+    with cols[0]:
+        st.markdown(f"""
+        <div>
+            <p style="font-size: 0.9rem; font-weight: 500; color: var(--text); margin: 0;">{title}</p>
+            {f'<p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.125rem 0 0;">{subtitle}</p>' if subtitle else ''}
+        </div>
+        """, unsafe_allow_html=True)
 
-    with col1:
-        if st.button(cancel_label, use_container_width=True):
-            return False
+    with cols[1]:
+        if status:
+            status_badge(status)
+        if meta:
+            st.caption(meta)
 
-    with col2:
-        button_type = "primary" if not danger else "primary"
-        if st.button(confirm_label, use_container_width=True, type=button_type):
-            return True
-
-    return None
-
-
-def form_section(title: str, description: str | None = None) -> None:
-    """
-    Display a form section header.
-
-    Args:
-        title: Section title
-        description: Optional description
-    """
-    st.markdown(f"#### {title}")
-    if description:
-        st.caption(description)
-    st.markdown("---")
+    if actions and len(cols) > 2:
+        with cols[2]:
+            action_cols = st.columns(len(actions))
+            for i, (label, callback) in enumerate(actions):
+                with action_cols[i]:
+                    if st.button(label, key=f"action_{title}_{label}"):
+                        callback()
 
 
 # ============================================================================
-# Feedback Components
+# Empty & Loading States
 # ============================================================================
-
-def loading_spinner(message: str = "Loading...") -> None:
-    """Display a loading spinner with message."""
-    st.markdown(f"""
-    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 1rem;">
-        <div class="animate-spin" style="
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-        "></div>
-        <span style="color: var(--text-secondary);">{message}</span>
-    </div>
-    """, unsafe_allow_html=True)
-
 
 def empty_state(
     title: str,
@@ -471,156 +342,293 @@ def empty_state(
     Display an empty state placeholder.
 
     Args:
-        title: Empty state title
+        title: Title text
         message: Description message
-        icon: Emoji icon
+        icon: Display icon
         action_label: Optional action button label
         action_callback: Optional action callback
     """
     st.markdown(f"""
-    <div style="
-        text-align: center;
-        padding: 3rem 2rem;
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        border: 2px dashed var(--border);
-    ">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">{icon}</div>
-        <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">{title}</h3>
-        <p style="color: var(--text-secondary);">{message}</p>
+    <div class="empty-state">
+        <div class="empty-state-icon">{icon}</div>
+        <h4 style="font-size: 1rem; font-weight: 600; color: var(--text); margin: 0 0 0.5rem;">{title}</h4>
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">{message}</p>
     </div>
     """, unsafe_allow_html=True)
 
     if action_label and action_callback:
-        col1, col2, col3 = st.columns([1, 1, 1])
+        col1, col2, col3 = st.columns([2, 1, 2])
         with col2:
-            if st.button(action_label, use_container_width=True, type="primary"):
+            if st.button(action_label, type="primary", use_container_width=True):
                 action_callback()
+
+
+def loading_skeleton(rows: int = 3, height: int = 20) -> None:
+    """Display loading skeleton placeholders."""
+    for _ in range(rows):
+        st.markdown(f"""
+        <div class="skeleton" style="height: {height}px; margin-bottom: 0.75rem;"></div>
+        """, unsafe_allow_html=True)
+
+
+def spinner_inline(message: str = "Loading...") -> None:
+    """Display an inline loading spinner."""
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0;">
+        <div style="
+            width: 16px; height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        "></div>
+        <span style="font-size: 0.875rem; color: var(--text-secondary);">{message}</span>
+    </div>
+    <style>
+    @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# ============================================================================
+# Progress & Steps
+# ============================================================================
+
+def progress_bar(
+    value: float,
+    label: str | None = None,
+    show_percentage: bool = True,
+    color: str = "var(--accent)",
+) -> None:
+    """
+    Display a minimal progress bar.
+
+    Args:
+        value: Progress value (0-100)
+        label: Optional label
+        show_percentage: Show percentage text
+        color: Bar color
+    """
+    percentage = min(max(value, 0), 100)
+
+    st.markdown(f"""
+    <div style="margin: 0.5rem 0;">
+        {f'<div style="display: flex; justify-content: space-between; margin-bottom: 0.375rem;"><span style="font-size: 0.8rem; color: var(--text-secondary);">{label}</span><span style="font-size: 0.8rem; color: var(--text-muted);">{percentage:.0f}%</span></div>' if label or show_percentage else ''}
+        <div style="height: 6px; background: var(--surface-muted); border-radius: 3px; overflow: hidden;">
+            <div style="width: {percentage}%; height: 100%; background: {color}; border-radius: 3px; transition: width 0.3s ease;"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def progress_steps(
     steps: list[str],
     current_step: int,
-    completed_steps: list[int] | None = None,
+    orientation: Literal["horizontal", "vertical"] = "horizontal",
 ) -> None:
     """
     Display a progress stepper.
 
     Args:
         steps: List of step labels
-        current_step: Current step index (0-based)
-        completed_steps: List of completed step indices
+        current_step: Current step (0-indexed)
+        orientation: Layout orientation
     """
-    completed = completed_steps or []
+    if orientation == "horizontal":
+        cols = st.columns(len(steps))
+        for i, (col, step) in enumerate(zip(cols, steps)):
+            with col:
+                is_complete = i < current_step
+                is_current = i == current_step
+                color = "var(--success)" if is_complete else ("var(--accent)" if is_current else "var(--border)")
+                bg = color if (is_complete or is_current) else "transparent"
+                text_color = "white" if (is_complete or is_current) else "var(--text-muted)"
 
-    cols = st.columns(len(steps))
-
-    for i, (col, step) in enumerate(zip(cols, steps)):
-        with col:
-            if i in completed:
-                status = "completed"
-                icon = "✓"
-                color = "var(--success)"
-            elif i == current_step:
-                status = "current"
-                icon = str(i + 1)
-                color = "var(--primary)"
-            else:
-                status = "pending"
-                icon = str(i + 1)
-                color = "var(--text-muted)"
-
-            st.markdown(f"""
-            <div style="text-align: center;">
-                <div style="
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    background: {color if status != 'pending' else 'var(--surface)'};
-                    border: 2px solid {color};
-                    color: {'white' if status != 'pending' else color};
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: 600;
-                    margin-bottom: 0.5rem;
-                ">{icon}</div>
-                <div style="
-                    font-size: 0.75rem;
-                    color: {color};
-                    font-weight: {'600' if status == 'current' else '400'};
-                ">{step}</div>
-            </div>
-            """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style="text-align: center;">
+                    <div style="
+                        width: 28px; height: 28px; border-radius: 50%;
+                        background: {bg}; border: 2px solid {color};
+                        color: {text_color}; font-size: 0.75rem; font-weight: 600;
+                        display: inline-flex; align-items: center; justify-content: center;
+                        margin-bottom: 0.5rem;
+                    ">{'✓' if is_complete else i + 1}</div>
+                    <p style="font-size: 0.75rem; color: {'var(--text)' if is_current else 'var(--text-muted)'}; margin: 0; font-weight: {'500' if is_current else '400'};">{step}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
 
 # ============================================================================
-# Chart Components
+# Navigation Components
 # ============================================================================
 
-def mini_chart(
-    data: list[float],
-    chart_type: Literal["line", "bar", "area"] = "line",
-    color: str | None = None,
-    height: int = 60,
-) -> None:
+def breadcrumb(items: list[tuple[str, str | None]]) -> None:
     """
-    Display a mini sparkline chart.
+    Display breadcrumb navigation.
 
     Args:
-        data: List of numeric values
-        chart_type: Type of chart
-        color: Chart color
-        height: Chart height in pixels
+        items: List of (label, url) tuples. Use None for current page.
     """
-    import pandas as pd
+    parts = []
+    for i, (label, url) in enumerate(items):
+        if url and i < len(items) - 1:
+            parts.append(f'<a href="{url}" style="color: var(--accent); text-decoration: none; font-weight: 500;">{label}</a>')
+        else:
+            parts.append(f'<span style="color: var(--text);">{label}</span>')
 
-    df = pd.DataFrame({"value": data})
-
-    if chart_type == "line":
-        st.line_chart(df, height=height, use_container_width=True)
-    elif chart_type == "bar":
-        st.bar_chart(df, height=height, use_container_width=True)
-    elif chart_type == "area":
-        st.area_chart(df, height=height, use_container_width=True)
+    separator = '<span style="color: var(--text-muted); margin: 0 0.5rem;">/</span>'
+    st.markdown(f'<nav style="font-size: 0.8rem; margin-bottom: 1.5rem;">{separator.join(parts)}</nav>', unsafe_allow_html=True)
 
 
-# ============================================================================
-# Layout Components
-# ============================================================================
-
-def grid(columns: int = 2) -> list:
+def tab_navigation(
+    tabs: list[tuple[str, str]],
+    selected: str,
+    on_change: Callable[[str], None] | None = None,
+) -> str:
     """
-    Create a grid layout.
+    Custom tab navigation.
 
     Args:
-        columns: Number of columns
+        tabs: List of (label, key) tuples
+        selected: Currently selected tab key
+        on_change: Callback when tab changes
 
     Returns:
-        List of column objects
+        Selected tab key
     """
-    return st.columns(columns)
+    tab_labels = [t[0] for t in tabs]
+    tab_keys = [t[1] for t in tabs]
+
+    selected_idx = tab_keys.index(selected) if selected in tab_keys else 0
+
+    selected_tabs = st.tabs(tab_labels)
+
+    for i, tab in enumerate(selected_tabs):
+        with tab:
+            if i != selected_idx and on_change:
+                on_change(tab_keys[i])
+            return tab_keys[i]
+
+    return tab_keys[selected_idx]
 
 
-def spacer(size: Literal["xs", "sm", "md", "lg", "xl"] = "md") -> None:
-    """Add vertical spacing."""
-    sizes = {"xs": 1, "sm": 2, "md": 3, "lg": 4, "xl": 5}
-    for _ in range(sizes.get(size, 3)):
-        st.write("")
+# ============================================================================
+# Form Components
+# ============================================================================
 
+def search_input(
+    placeholder: str = "Search...",
+    key: str = "search",
+    icon: bool = True,
+) -> str:
+    """
+    Display a search input.
+
+    Args:
+        placeholder: Placeholder text
+        key: Session state key
+        icon: Show search icon
+
+    Returns:
+        Search value
+    """
+    return st.text_input(
+        label="Search",
+        placeholder=f"🔍 {placeholder}" if icon else placeholder,
+        key=key,
+        label_visibility="collapsed",
+    )
+
+
+def filter_chips(
+    options: list[str],
+    selected: list[str],
+    key: str = "filters",
+) -> list[str]:
+    """
+    Display filter chip selection.
+
+    Args:
+        options: Available filter options
+        selected: Currently selected options
+        key: Session state key
+
+    Returns:
+        Selected options
+    """
+    cols = st.columns(len(options) + 1)
+
+    with cols[0]:
+        if st.button("Clear", key=f"{key}_clear"):
+            return []
+
+    new_selected = list(selected)
+
+    for i, option in enumerate(options):
+        with cols[i + 1]:
+            is_selected = option in selected
+            if st.button(
+                option,
+                key=f"{key}_{option}",
+                type="primary" if is_selected else "secondary",
+            ):
+                if is_selected:
+                    new_selected.remove(option)
+                else:
+                    new_selected.append(option)
+
+    return new_selected
+
+
+# ============================================================================
+# Feedback Components
+# ============================================================================
+
+def toast(
+    message: str,
+    type: Literal["success", "error", "warning", "info"] = "info",
+) -> None:
+    """Display a toast notification."""
+    icons = {"success": "✓", "error": "✕", "warning": "!", "info": "i"}
+    st.toast(f"{icons.get(type, '')} {message}")
+
+
+def inline_alert(
+    message: str,
+    type: Literal["success", "error", "warning", "info"] = "info",
+) -> None:
+    """Display an inline alert."""
+    colors = {
+        "success": ("var(--success)", "var(--success-light)"),
+        "error": ("var(--error)", "var(--error-light)"),
+        "warning": ("var(--warning)", "var(--warning-light)"),
+        "info": ("var(--info)", "var(--info-light)"),
+    }
+    text_color, bg_color = colors.get(type, colors["info"])
+
+    st.markdown(f"""
+    <div style="
+        background: {bg_color};
+        border-left: 3px solid {text_color};
+        padding: 0.75rem 1rem;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        font-size: 0.875rem;
+        color: {text_color};
+    ">{message}</div>
+    """, unsafe_allow_html=True)
+
+
+# ============================================================================
+# Layout Utilities
+# ============================================================================
 
 def divider(text: str | None = None) -> None:
     """Display a divider with optional text."""
     if text:
         st.markdown(f"""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin: 1rem 0;
-        ">
+        <div style="display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0;">
             <div style="flex: 1; height: 1px; background: var(--border);"></div>
-            <span style="color: var(--text-muted); font-size: 0.875rem;">{text}</span>
+            <span style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em;">{text}</span>
             <div style="flex: 1; height: 1px; background: var(--border);"></div>
         </div>
         """, unsafe_allow_html=True)
@@ -628,45 +636,46 @@ def divider(text: str | None = None) -> None:
         st.markdown("---")
 
 
+def spacer(size: Literal["xs", "sm", "md", "lg", "xl"] = "md") -> None:
+    """Add vertical spacing."""
+    heights = {"xs": "0.5rem", "sm": "1rem", "md": "1.5rem", "lg": "2rem", "xl": "3rem"}
+    st.markdown(f'<div style="height: {heights.get(size, "1.5rem")};"></div>', unsafe_allow_html=True)
+
+
+def grid_container(columns: int = 2, gap: str = "1rem") -> list:
+    """Create a grid layout with custom gap."""
+    return st.columns(columns)
+
+
 # ============================================================================
-# Utility Components
+# Icon Components
 # ============================================================================
 
-def copy_button(text: str, label: str = "Copy") -> None:
-    """Display a copy-to-clipboard button."""
-    import html as html_lib
+def icon_button(
+    icon: str,
+    tooltip: str,
+    on_click: Callable,
+    key: str,
+    size: Literal["sm", "md", "lg"] = "md",
+) -> None:
+    """Display an icon-only button."""
+    sizes = {"sm": "28px", "md": "36px", "lg": "44px"}
+    if st.button(icon, key=key, help=tooltip):
+        on_click()
 
-    escaped_text = html_lib.escape(text)
 
+def icon_with_label(
+    icon: str,
+    label: str,
+    sublabel: str | None = None,
+) -> None:
+    """Display an icon with label."""
     st.markdown(f"""
-    <button onclick="navigator.clipboard.writeText('{escaped_text}')" style="
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 0.25rem 0.5rem;
-        cursor: pointer;
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-    ">
-        {label}
-    </button>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">{icon}</span>
+        <div>
+            <p style="font-size: 0.9rem; font-weight: 500; color: var(--text); margin: 0;">{label}</p>
+            {f'<p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">{sublabel}</p>' if sublabel else ''}
+        </div>
+    </div>
     """, unsafe_allow_html=True)
-
-
-def tooltip(text: str, content: str) -> None:
-    """Display text with a tooltip."""
-    st.markdown(f"""
-    <span title="{content}" style="
-        border-bottom: 1px dotted var(--text-muted);
-        cursor: help;
-    ">{text}</span>
-    """, unsafe_allow_html=True)
-
-
-def external_link(url: str, label: str, icon: str = "🔗") -> None:
-    """Display an external link."""
-    st.markdown(
-        f'<a href="{url}" target="_blank" style="color: var(--primary); text-decoration: none;">'
-        f'{icon} {label}</a>',
-        unsafe_allow_html=True
-    )

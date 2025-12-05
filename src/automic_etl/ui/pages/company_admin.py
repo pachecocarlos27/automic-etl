@@ -2,9 +2,132 @@
 
 from __future__ import annotations
 
+import httpx
 import streamlit as st
 from datetime import datetime
 from typing import Any
+
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    token = st.session_state.get("access_token", "")
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0, headers=headers)
+
+
+def _get_company_members() -> list[dict[str, Any]]:
+    """Fetch company members from API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return []
+        with _get_api_client() as client:
+            response = client.get(f"/companies/{company_id}/members")
+            if response.status_code == 200:
+                return response.json().get("members", [])
+            return []
+    except Exception:
+        return []
+
+
+def _get_company_invitations() -> list[dict[str, Any]]:
+    """Fetch company invitations from API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return []
+        with _get_api_client() as client:
+            response = client.get(f"/companies/{company_id}/invitations")
+            if response.status_code == 200:
+                return response.json().get("invitations", [])
+            return []
+    except Exception:
+        return []
+
+
+def _send_invitation(email: str, roles: list[str], message: str = "", expires_days: int = 7) -> bool:
+    """Send invitation via API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return False
+        with _get_api_client() as client:
+            response = client.post(
+                f"/companies/{company_id}/invitations",
+                json={
+                    "email": email,
+                    "role_ids": roles,
+                    "message": message,
+                    "expires_days": expires_days,
+                }
+            )
+            return response.status_code in (200, 201)
+    except Exception:
+        return False
+
+
+def _revoke_invitation(invitation_id: str) -> bool:
+    """Revoke invitation via API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return False
+        with _get_api_client() as client:
+            response = client.delete(f"/companies/{company_id}/invitations/{invitation_id}")
+            return response.status_code in (200, 204)
+    except Exception:
+        return False
+
+
+def _update_member(user_id: str, roles: list[str], is_admin: bool) -> bool:
+    """Update member via API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return False
+        with _get_api_client() as client:
+            response = client.put(
+                f"/companies/{company_id}/members/{user_id}",
+                json={
+                    "role_ids": roles,
+                    "is_company_admin": is_admin,
+                }
+            )
+            return response.status_code == 200
+    except Exception:
+        return False
+
+
+def _remove_member(user_id: str) -> bool:
+    """Remove member via API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return False
+        with _get_api_client() as client:
+            response = client.delete(f"/companies/{company_id}/members/{user_id}")
+            return response.status_code in (200, 204)
+    except Exception:
+        return False
+
+
+def _save_company_settings(settings: dict[str, Any]) -> bool:
+    """Save company settings via API."""
+    try:
+        company_id = st.session_state.get("current_company", {}).get("id")
+        if not company_id:
+            return False
+        with _get_api_client() as client:
+            response = client.put(
+                f"/companies/{company_id}/settings",
+                json=settings
+            )
+            return response.status_code == 200
+    except Exception:
+        return False
 
 
 def render_company_admin_page():
@@ -119,39 +242,8 @@ def render_members_section(company: dict):
         if st.button("+ Invite Member"):
             st.session_state["show_invite_modal"] = True
 
-    # Sample members data (in production, fetch from API)
-    members = [
-        {
-            "user_id": "user-1",
-            "username": "john.doe",
-            "email": "john@example.com",
-            "role_ids": ["admin"],
-            "is_company_admin": True,
-            "is_owner": True,
-            "joined_at": "2024-01-01T00:00:00Z",
-            "status": "active",
-        },
-        {
-            "user_id": "user-2",
-            "username": "jane.smith",
-            "email": "jane@example.com",
-            "role_ids": ["manager"],
-            "is_company_admin": False,
-            "is_owner": False,
-            "joined_at": "2024-01-15T00:00:00Z",
-            "status": "active",
-        },
-        {
-            "user_id": "user-3",
-            "username": "bob.wilson",
-            "email": "bob@example.com",
-            "role_ids": ["analyst"],
-            "is_company_admin": False,
-            "is_owner": False,
-            "joined_at": "2024-02-01T00:00:00Z",
-            "status": "active",
-        },
-    ]
+    # Fetch members from API
+    members = _get_company_members()
 
     # Members table
     for member in members:
@@ -193,31 +285,52 @@ def render_members_section(company: dict):
             new_roles = st.multiselect(
                 "Roles",
                 ["admin", "manager", "analyst", "viewer"],
-                default=member["role_ids"],
+                default=member.get("role_ids", []),
                 key=f"roles_{member['user_id']}"
             )
 
             is_admin = st.checkbox(
                 "Company Admin",
-                value=member["is_company_admin"],
+                value=member.get("is_company_admin", False),
                 key=f"admin_{member['user_id']}"
             )
 
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("Save Changes", key=f"save_{member['user_id']}"):
-                    st.success("Member updated!")
-                    del st.session_state["editing_member"]
-                    st.rerun()
+                    if _update_member(member["user_id"], new_roles, is_admin):
+                        st.success("Member updated!")
+                        del st.session_state["editing_member"]
+                        st.rerun()
+                    else:
+                        st.error("Failed to update member")
 
             with col2:
                 if st.button("Remove Member", key=f"remove_{member['user_id']}", type="secondary"):
-                    st.warning("Member removal confirmation needed")
+                    st.session_state["confirm_remove_member"] = member["user_id"]
 
             with col3:
                 if st.button("Cancel", key=f"cancel_{member['user_id']}"):
                     del st.session_state["editing_member"]
                     st.rerun()
+
+            # Confirmation for removal
+            if st.session_state.get("confirm_remove_member") == member["user_id"]:
+                st.warning(f"Are you sure you want to remove {member['username']} from the company?")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Yes, Remove", key=f"confirm_yes_{member['user_id']}"):
+                        if _remove_member(member["user_id"]):
+                            st.success("Member removed")
+                            del st.session_state["editing_member"]
+                            del st.session_state["confirm_remove_member"]
+                            st.rerun()
+                        else:
+                            st.error("Failed to remove member")
+                with col2:
+                    if st.button("No, Cancel", key=f"confirm_no_{member['user_id']}"):
+                        del st.session_state["confirm_remove_member"]
+                        st.rerun()
 
 
 def render_invitations_section(company: dict):
@@ -239,22 +352,17 @@ def render_invitations_section(company: dict):
             submitted = st.form_submit_button("Send Invitation")
             if submitted:
                 if email:
-                    st.success(f"Invitation sent to {email}!")
-                    st.session_state["show_invite_modal"] = False
+                    if _send_invitation(email, roles, message, expires_days):
+                        st.success(f"Invitation sent to {email}!")
+                        st.session_state["show_invite_modal"] = False
+                        st.rerun()
+                    else:
+                        st.error("Failed to send invitation. Please try again.")
                 else:
                     st.error("Please enter an email address")
 
-    # Pending invitations list
-    invitations = [
-        {
-            "invitation_id": "inv-1",
-            "email": "new.user@example.com",
-            "role_ids": ["analyst"],
-            "status": "pending",
-            "created_at": "2024-02-01T00:00:00Z",
-            "expires_at": "2024-02-08T00:00:00Z",
-        },
-    ]
+    # Fetch pending invitations from API
+    invitations = _get_company_invitations()
 
     if not invitations:
         st.info("No pending invitations")
@@ -264,17 +372,24 @@ def render_invitations_section(company: dict):
                 col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
 
                 with col1:
-                    st.text(inv["email"])
+                    st.text(inv.get("email", "-"))
 
                 with col2:
-                    st.text(f"Roles: {', '.join(inv['role_ids'])}")
+                    role_ids = inv.get("role_ids", [])
+                    st.text(f"Roles: {', '.join(role_ids)}")
 
                 with col3:
-                    st.text(f"Expires: {inv['expires_at'][:10]}")
+                    expires_at = inv.get("expires_at", "")
+                    st.text(f"Expires: {expires_at[:10] if expires_at else 'N/A'}")
 
                 with col4:
-                    if st.button("Revoke", key=f"revoke_{inv['invitation_id']}"):
-                        st.success("Invitation revoked")
+                    inv_id = inv.get("invitation_id", inv.get("id", ""))
+                    if st.button("Revoke", key=f"revoke_{inv_id}"):
+                        if _revoke_invitation(inv_id):
+                            st.success("Invitation revoked")
+                            st.rerun()
+                        else:
+                            st.error("Failed to revoke invitation")
 
                 st.divider()
 
@@ -345,7 +460,20 @@ def render_company_settings(company: dict):
 
         submitted = st.form_submit_button("Save Settings")
         if submitted:
-            st.success("Settings saved successfully!")
+            # Prepare settings to save
+            settings_to_save = {
+                "logo_url": logo_url,
+                "primary_color": primary_color,
+                "require_mfa": require_mfa,
+                "session_timeout_minutes": session_timeout,
+                "allowed_email_domains": [d.strip() for d in allowed_domains.split("\n") if d.strip()],
+                "notification_email": notification_email,
+                "slack_webhook": slack_webhook,
+            }
+            if _save_company_settings(settings_to_save):
+                st.success("Settings saved successfully!")
+            else:
+                st.error("Failed to save settings. Please try again.")
 
 
 def render_usage_section(company: dict):

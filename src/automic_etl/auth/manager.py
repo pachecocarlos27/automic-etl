@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 import json
 import os
@@ -10,6 +10,7 @@ from pathlib import Path
 
 import structlog
 
+from automic_etl.core.utils import utc_now
 from automic_etl.auth.models import (
     User,
     Role,
@@ -333,7 +334,7 @@ class AuthManager:
 
             # Check if should lock
             if user.failed_login_attempts >= self.max_failed_attempts:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=self.lockout_minutes)
+                user.locked_until = utc_now() + timedelta(minutes=self.lockout_minutes)
 
             self._save_data()
 
@@ -562,7 +563,7 @@ class AuthManager:
         if settings is not None:
             user.settings.update(settings)
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = utc_now()
         self._save_data()
 
         self._log_action(

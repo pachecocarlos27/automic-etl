@@ -14,6 +14,7 @@ import structlog
 
 from automic_etl.core.config import Settings, get_settings
 from automic_etl.core.exceptions import AutomicETLError
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -276,7 +277,7 @@ class Pipeline:
     async def run(self, metadata: dict[str, Any] | None = None) -> PipelineResult:
         """Execute the pipeline."""
         pipeline_id = str(uuid.uuid4())
-        metrics = PipelineMetrics(start_time=datetime.utcnow())
+        metrics = PipelineMetrics(start_time=utc_now())
         context = PipelineContext(
             pipeline_id=pipeline_id,
             settings=self.settings,
@@ -319,7 +320,7 @@ class Pipeline:
             )
 
         finally:
-            metrics.end_time = datetime.utcnow()
+            metrics.end_time = utc_now()
 
         return PipelineResult(
             pipeline_id=pipeline_id,

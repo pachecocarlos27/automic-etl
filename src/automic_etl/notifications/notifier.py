@@ -5,10 +5,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
-from datetime import datetime
 from enum import Enum
 
 import structlog
+
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -87,7 +88,7 @@ class Notifier:
         self.channels: dict[str, NotificationChannel] = {}
         self.history: list[Notification] = []
         self._sent_count = 0
-        self._last_reset = datetime.utcnow()
+        self._last_reset = utc_now()
         self.logger = logger.bind(component="notifier")
 
     def add_channel(self, name: str, channel: NotificationChannel) -> None:
@@ -107,7 +108,7 @@ class Notifier:
         if not self.rate_limit:
             return True
 
-        now = datetime.utcnow()
+        now = utc_now()
         if (now - self._last_reset).total_seconds() >= 60:
             self._sent_count = 0
             self._last_reset = now

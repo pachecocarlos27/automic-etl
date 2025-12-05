@@ -2,9 +2,42 @@
 
 from __future__ import annotations
 
+import httpx
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Any
+
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0)
+
+
+def _get_recent_ai_operations() -> list[dict[str, Any]]:
+    """Fetch recent AI operations from API."""
+    try:
+        with _get_api_client() as client:
+            response = client.get("/ai/operations", params={"limit": 10})
+            if response.status_code == 200:
+                return response.json().get("operations", [])
+            return []
+    except Exception:
+        return []
+
+
+def _run_pii_scan(tables: list[str]) -> list[dict[str, Any]]:
+    """Run PII scan on selected tables."""
+    try:
+        with _get_api_client() as client:
+            response = client.post("/ai/pii-scan", json={"tables": tables})
+            if response.status_code == 200:
+                return response.json().get("results", [])
+            return []
+    except Exception:
+        return []
 
 
 def show_ai_services_page():
@@ -169,13 +202,11 @@ def _show_ai_overview():
     # Recent AI operations
     st.subheader("Recent AI Operations")
 
-    operations = [
-        {"type": "Schema Generation", "input": "sales_data.csv", "status": "success", "time": "5 min ago"},
-        {"type": "Entity Extraction", "input": "customer_feedback.json", "status": "success", "time": "15 min ago"},
-        {"type": "Data Classification", "input": "bronze.raw_customers", "status": "running", "time": "2 min ago"},
-        {"type": "NL Query", "input": "Show top 10 customers by revenue", "status": "success", "time": "20 min ago"},
-        {"type": "Document Processing", "input": "invoice_batch_001.pdf", "status": "failed", "time": "30 min ago"},
-    ]
+    operations = _get_recent_ai_operations()
+
+    if not operations:
+        st.info("No recent AI operations.")
+        return
 
     for op in operations:
         col1, col2, col3, col4 = st.columns([2, 3, 1, 1])
@@ -472,17 +503,13 @@ def _show_pii_detection():
 
     if st.button("Scan for PII", type="primary"):
         with st.spinner("Scanning for PII..."):
-            import time
-            time.sleep(2)
+            results = _run_pii_scan(selected_tables)
+
+        if not results:
+            st.info("No PII detected in the selected tables.")
+            return
 
         st.markdown("### PII Scan Results")
-
-        results = [
-            {"column": "email", "pii_type": "Email", "count": 1234, "sample": "j***@example.com"},
-            {"column": "phone", "pii_type": "Phone", "count": 987, "sample": "(***) ***-4567"},
-            {"column": "ssn", "pii_type": "SSN", "count": 456, "sample": "***-**-1234"},
-            {"column": "address", "pii_type": "Address", "count": 1100, "sample": "123 *** St, ***"},
-        ]
 
         for result in results:
             col1, col2, col3, col4 = st.columns([2, 2, 1, 2])

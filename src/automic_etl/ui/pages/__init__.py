@@ -7,8 +7,10 @@ from automic_etl.ui.pages.query_studio import show_query_studio_page
 from automic_etl.ui.pages.monitoring import show_monitoring_page
 from automic_etl.ui.pages.settings import show_settings_page
 from automic_etl.ui.pages.lineage import show_lineage_page
-from automic_etl.ui.pages.company_admin import show_company_admin
-from automic_etl.ui.pages.superadmin import show_superadmin
+from automic_etl.ui.pages.company_admin import show_company_admin, render_company_admin_page
+from automic_etl.ui.pages.superadmin import show_superadmin, render_superadmin_page
+from automic_etl.ui.pages.data_processing import show_data_processing_page
+from automic_etl.ui.pages.airflow_orchestration import render_airflow_page
 # New pages
 from automic_etl.ui.pages.jobs import show_jobs_page
 from automic_etl.ui.pages.validation import show_validation_page
@@ -27,6 +29,10 @@ __all__ = [
     "show_lineage_page",
     "show_company_admin",
     "show_superadmin",
+    "render_company_admin_page",
+    "render_superadmin_page",
+    "show_data_processing_page",
+    "render_airflow_page",
     # New pages
     "show_jobs_page",
     "show_validation_page",

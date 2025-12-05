@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -16,6 +15,7 @@ from automic_etl.api.models import (
     BaseResponse,
 )
 from automic_etl.db.job_service import get_job_service
+from automic_etl.core.utils import utc_now
 
 router = APIRouter()
 
@@ -232,7 +232,7 @@ async def trigger_job(job_id: str):
     if not schedule:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    now = datetime.utcnow()
+    now = utc_now()
 
     # Create a new run
     run = service.create_run(
@@ -407,7 +407,7 @@ async def cancel_job_run(job_id: str, run_id: str):
             if run.status != "running":
                 raise HTTPException(status_code=400, detail="Job run is not running")
 
-            now = datetime.utcnow()
+            now = utc_now()
             logs = run.logs or []
             logs.append(f"[{now.isoformat()}] Job cancelled by user")
 

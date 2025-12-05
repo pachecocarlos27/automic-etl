@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Any
 import uuid
 import hashlib
 import secrets
+
+from automic_etl.core.utils import utc_now
 
 
 class UserStatus(Enum):
@@ -113,7 +114,7 @@ class Role:
             permission = permission.value
         if permission not in self.permissions:
             self.permissions.append(permission)
-            self.updated_at = datetime.utcnow()
+            self.updated_at = utc_now()
 
     def remove_permission(self, permission: str | PermissionType) -> None:
         """Remove a permission from the role."""
@@ -121,7 +122,7 @@ class Role:
             permission = permission.value
         if permission in self.permissions:
             self.permissions.remove(permission)
-            self.updated_at = datetime.utcnow()
+            self.updated_at = utc_now()
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -206,24 +207,24 @@ class User:
         """Set a new password."""
         self.salt = secrets.token_hex(32)
         self.password_hash = self._hash_password(password, self.salt)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = utc_now()
 
     def add_role(self, role_id: str) -> None:
         """Add a role to the user."""
         if role_id not in self.roles:
             self.roles.append(role_id)
-            self.updated_at = datetime.utcnow()
+            self.updated_at = utc_now()
 
     def remove_role(self, role_id: str) -> None:
         """Remove a role from the user."""
         if role_id in self.roles:
             self.roles.remove(role_id)
-            self.updated_at = datetime.utcnow()
+            self.updated_at = utc_now()
 
     def record_login(self, success: bool) -> None:
         """Record a login attempt."""
         if success:
-            self.last_login = datetime.utcnow()
+            self.last_login = utc_now()
             self.failed_login_attempts = 0
             self.locked_until = None
         else:
@@ -232,7 +233,7 @@ class User:
     @property
     def is_locked(self) -> bool:
         """Check if account is locked."""
-        if self.locked_until and datetime.utcnow() < self.locked_until:
+        if self.locked_until and utc_now() < self.locked_until:
             return True
         return False
 
@@ -340,7 +341,7 @@ class AuditLog:
         """Create a new audit log entry."""
         return cls(
             log_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             user_id=user_id,
             username=username,
             action=action,

@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
 import secrets
 from typing import Optional, Tuple
 
 import structlog
 
+from automic_etl.core.utils import utc_now
 from automic_etl.db.engine import get_session, init_db
 from automic_etl.db.models import UserModel, SessionModel, AuditLogModel
 
@@ -182,7 +183,7 @@ class AuthService:
             if not user.verify_password(password):
                 user.failed_login_attempts += 1
                 if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
-                    user.locked_until = datetime.utcnow() + timedelta(minutes=LOCKOUT_MINUTES)
+                    user.locked_until = utc_now() + timedelta(minutes=LOCKOUT_MINUTES)
 
                 self._log_action(
                     session,
@@ -195,7 +196,7 @@ class AuthService:
                 )
                 raise AuthenticationError("Invalid credentials")
 
-            user.last_login = datetime.utcnow()
+            user.last_login = utc_now()
             user.failed_login_attempts = 0
             user.locked_until = None
 
@@ -203,7 +204,7 @@ class AuthService:
             user_session = SessionModel(
                 user_id=user.id,
                 token=token,
-                expires_at=datetime.utcnow() + timedelta(hours=SESSION_DURATION_HOURS),
+                expires_at=utc_now() + timedelta(hours=SESSION_DURATION_HOURS),
                 ip_address=ip_address,
                 user_agent=user_agent,
             )
@@ -231,7 +232,7 @@ class AuthService:
             user_session = session.query(SessionModel).filter(
                 SessionModel.token == token,
                 SessionModel.is_valid == True,
-                SessionModel.expires_at > datetime.utcnow()
+                SessionModel.expires_at > utc_now()
             ).first()
 
             if not user_session:

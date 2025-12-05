@@ -851,19 +851,17 @@ def render_healing_history() -> None:
     """Render healing history."""
     st.subheader("Healing History")
 
-    # This would typically come from a database
     st.info("Healing history shows all auto-healing actions taken by the system.")
 
-    # Placeholder data
-    history = [
-        {"timestamp": "2024-01-15 10:30:00", "dag_id": "etl_customers", "action": "retry", "success": True},
-        {"timestamp": "2024-01-14 15:45:00", "dag_id": "etl_orders", "action": "skip_bad_records", "success": True},
-        {"timestamp": "2024-01-13 08:20:00", "dag_id": "ml_pipeline", "action": "reduce_batch_size", "success": False},
-    ]
+    history = get_healing_history()
+
+    if not history:
+        st.info("No healing actions recorded yet.")
+        return
 
     for item in history:
-        icon = ":white_check_mark:" if item["success"] else ":x:"
-        st.markdown(f"{icon} **{item['timestamp']}** - {item['dag_id']}: {item['action']}")
+        icon = ":white_check_mark:" if item.get("success") else ":x:"
+        st.markdown(f"{icon} **{item.get('timestamp', 'N/A')}** - {item.get('dag_id', 'N/A')}: {item.get('action', 'N/A')}")
 
 
 def render_settings() -> None:
@@ -1177,6 +1175,18 @@ def execute_recovery(dag_id: str, run_id: str, task_id: str | None, auto_execute
             return {"status": "error", "error": f"HTTP {response.status_code}"}
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+def get_healing_history() -> list[dict[str, Any]]:
+    """Get healing history from the orchestrator."""
+    try:
+        with _get_api_client() as client:
+            response = client.get("/airflow/orchestrator/healing-history")
+            if response.status_code == 200:
+                return response.json().get("history", [])
+            return []
+    except Exception:
+        return []
 
 
 # Page entry point

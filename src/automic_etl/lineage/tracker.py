@@ -13,6 +13,8 @@ from pathlib import Path
 import polars as pl
 import structlog
 
+from automic_etl.core.utils import utc_now
+
 logger = structlog.get_logger()
 
 
@@ -144,7 +146,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=OperationType.READ,
             source_assets=[source],
             target_assets=[],
@@ -180,7 +182,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=OperationType.WRITE,
             source_assets=source_assets,
             target_assets=[target],
@@ -212,7 +214,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=OperationType.TRANSFORM,
             source_assets=[source],
             target_assets=[target],
@@ -251,7 +253,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=OperationType.JOIN,
             source_assets=sources,
             target_assets=[target],
@@ -281,7 +283,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=OperationType.AGGREGATE,
             source_assets=[source],
             target_assets=[target],
@@ -313,7 +315,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=OperationType.MERGE,
             source_assets=[source],
             target_assets=[target],
@@ -350,7 +352,7 @@ class LineageTracker:
 
         event = LineageEvent(
             event_id=str(uuid.uuid4()),
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             operation=operation,
             source_assets=source_assets,
             target_assets=[],
@@ -480,7 +482,7 @@ class LineageContext:
 
     def __enter__(self) -> LineageTracker:
         self.tracker.start_job(self.job_name)
-        self.start_time = datetime.utcnow()
+        self.start_time = utc_now()
         return self.tracker
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

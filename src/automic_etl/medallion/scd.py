@@ -11,6 +11,7 @@ import structlog
 from automic_etl.core.config import Settings
 from automic_etl.core.exceptions import TransformationError
 from automic_etl.storage.iceberg import IcebergTableManager
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -72,7 +73,7 @@ class SCDType2Manager:
         Returns:
             Dict with counts: inserted, updated, unchanged
         """
-        effective_date = effective_date or datetime.utcnow()
+        effective_date = effective_date or utc_now()
 
         # Determine tracked columns (exclude business keys and SCD columns)
         if tracked_columns is None:
@@ -416,7 +417,7 @@ class SCDType2Manager:
         Returns:
             Counts of inserted, updated, deleted, unchanged
         """
-        effective_date = effective_date or datetime.utcnow()
+        effective_date = effective_date or utc_now()
 
         # Separate deletes from regular records
         if delete_indicator and delete_indicator in source_df.columns:

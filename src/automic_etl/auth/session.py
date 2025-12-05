@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 import secrets
 import hashlib
 
 import structlog
+
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -29,7 +31,7 @@ class Session:
     @property
     def is_expired(self) -> bool:
         """Check if session is expired."""
-        return datetime.utcnow() > self.expires_at
+        return utc_now() > self.expires_at
 
     @property
     def is_active(self) -> bool:
@@ -38,8 +40,8 @@ class Session:
 
     def refresh(self, extend_hours: int = 24) -> None:
         """Refresh session expiry."""
-        self.last_activity = datetime.utcnow()
-        self.expires_at = datetime.utcnow() + timedelta(hours=extend_hours)
+        self.last_activity = utc_now()
+        self.expires_at = utc_now() + timedelta(hours=extend_hours)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -110,7 +112,7 @@ class SessionManager:
         token_hash = self._hash_token(token)
         session_id = secrets.token_hex(16)
 
-        now = datetime.utcnow()
+        now = utc_now()
 
         session = Session(
             session_id=session_id,
@@ -161,13 +163,13 @@ class SessionManager:
                     return None
 
                 # Check inactivity
-                inactivity = datetime.utcnow() - session.last_activity
+                inactivity = utc_now() - session.last_activity
                 if inactivity > timedelta(hours=self.inactivity_timeout_hours):
                     self.invalidate_session(session.session_id)
                     return None
 
                 # Update last activity
-                session.last_activity = datetime.utcnow()
+                session.last_activity = utc_now()
                 return session
 
         return None

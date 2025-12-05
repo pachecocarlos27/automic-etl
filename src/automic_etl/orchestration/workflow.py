@@ -11,6 +11,7 @@ import uuid
 import structlog
 
 from automic_etl.orchestration.scheduler import JobStatus
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -272,7 +273,7 @@ class WorkflowRunner:
             WorkflowResult with execution details
         """
         self.context = context or {}
-        started_at = datetime.utcnow()
+        started_at = utc_now()
         step_results = []
 
         self.logger.info("Workflow started", workflow=workflow.name)
@@ -301,7 +302,7 @@ class WorkflowRunner:
             self.logger.error("Workflow failed", error=str(e))
             status = JobStatus.FAILED
 
-        ended_at = datetime.utcnow()
+        ended_at = utc_now()
 
         result = WorkflowResult(
             workflow_id=workflow.workflow_id,
@@ -324,7 +325,7 @@ class WorkflowRunner:
 
     def _execute_step(self, step: WorkflowStep) -> StepResult:
         """Execute a single step."""
-        started_at = datetime.utcnow()
+        started_at = utc_now()
 
         self.logger.debug("Executing step", step=step.name, type=step.step_type.value)
 
@@ -351,7 +352,7 @@ class WorkflowRunner:
             error = str(e)
             self.logger.error("Step failed", step=step.name, error=error)
 
-        ended_at = datetime.utcnow()
+        ended_at = utc_now()
 
         return StepResult(
             step_id=step.step_id,

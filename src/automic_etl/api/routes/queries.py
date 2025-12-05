@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 import time
-from datetime import datetime
+from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query as QueryParam, Depends
@@ -23,6 +23,7 @@ from automic_etl.api.middleware import (
 )
 from automic_etl.auth.models import PermissionType
 from automic_etl.auth.security import SecurityContext
+from automic_etl.core.utils import utc_now
 
 router = APIRouter()
 
@@ -47,9 +48,7 @@ def _check_llm_rate_limit(company_id: str, user_id: str) -> tuple[bool, str | No
     Returns:
         Tuple of (allowed, reason if not allowed)
     """
-    from datetime import timedelta
-
-    now = datetime.utcnow()
+    now = utc_now()
     minute_ago = now - timedelta(minutes=1)
     day_ago = now - timedelta(days=1)
 
@@ -95,7 +94,7 @@ def _check_llm_rate_limit(company_id: str, user_id: str) -> tuple[bool, str | No
 
 def _record_llm_request(company_id: str, user_id: str):
     """Record an LLM request for rate limiting."""
-    now = datetime.utcnow()
+    now = utc_now()
 
     if company_id not in _llm_rate_limiters:
         _llm_rate_limiters[company_id] = {
@@ -173,76 +172,27 @@ class AutocompleteResponse(BaseModel):
     completions: list[str]
 
 
-# Sample table schemas for demo
-SAMPLE_SCHEMAS = {
-    "gold.customer_summary": {
-        "columns": {
-            "customer_id": "INTEGER",
-            "customer_name": "STRING",
-            "email": "STRING",
-            "segment": "STRING",
-            "lifetime_value": "DECIMAL(10,2)",
-            "total_orders": "INTEGER",
-            "first_order_date": "DATE",
-            "last_order_date": "DATE",
-            "avg_order_value": "DECIMAL(10,2)",
-        },
-        "description": "Customer summary with aggregated metrics",
-        "tier": "gold",
-    },
-    "silver.orders": {
-        "columns": {
-            "order_id": "INTEGER",
-            "customer_id": "INTEGER",
-            "order_date": "TIMESTAMP",
-            "status": "STRING",
-            "total_amount": "DECIMAL(10,2)",
-            "discount": "DECIMAL(10,2)",
-            "shipping_cost": "DECIMAL(10,2)",
-            "payment_method": "STRING",
-        },
-        "description": "Cleaned order transactions",
-        "tier": "silver",
-    },
-    "silver.products": {
-        "columns": {
-            "product_id": "INTEGER",
-            "product_name": "STRING",
-            "category": "STRING",
-            "subcategory": "STRING",
-            "price": "DECIMAL(10,2)",
-            "cost": "DECIMAL(10,2)",
-            "stock_quantity": "INTEGER",
-            "supplier_id": "INTEGER",
-        },
-        "description": "Product catalog",
-        "tier": "silver",
-    },
-    "silver.order_items": {
-        "columns": {
-            "order_item_id": "INTEGER",
-            "order_id": "INTEGER",
-            "product_id": "INTEGER",
-            "quantity": "INTEGER",
-            "unit_price": "DECIMAL(10,2)",
-            "discount_percent": "DECIMAL(5,2)",
-        },
-        "description": "Order line items",
-        "tier": "silver",
-    },
-    "bronze.raw_events": {
-        "columns": {
-            "event_id": "STRING",
-            "event_type": "STRING",
-            "user_id": "STRING",
-            "timestamp": "TIMESTAMP",
-            "properties": "JSON",
-            "source": "STRING",
-        },
-        "description": "Raw event data from various sources",
-        "tier": "bronze",
-    },
-}
+def _get_table_schemas(ctx: SecurityContext) -> dict:
+    """Get table schemas from the database."""
+    from automic_etl.db.table_service import get_table_service
+
+    service = get_table_service()
+    tables = service.list_tables()
+    schemas = {}
+
+    for table in tables:
+        tier = table.layer
+        name = f"{tier}.{table.name}"
+        schema_def = table.schema_definition or {}
+        columns = schema_def.get("columns", [])
+
+        schemas[name] = {
+            "columns": {col.get("name", ""): col.get("data_type", "STRING") for col in columns},
+            "description": table.description or "",
+            "tier": tier,
+        }
+
+    return schemas
 
 
 def _get_company_history(company_id: str) -> list[dict]:
@@ -414,8 +364,9 @@ ORDER BY event_count DESC"""
         confidence = 0.60
 
     # Check tier access
+    schemas = _get_table_schemas(ctx)
     for table in tables_used:
-        schema = SAMPLE_SCHEMAS.get(table, {})
+        schema = schemas.get(table, {})
         tier = schema.get("tier", "silver")
         if tier not in allowed_tiers:
             return {
@@ -444,93 +395,31 @@ def _execute_sql_secure(
     ctx: SecurityContext,
     limit: int = 100,
 ) -> dict:
-    """Execute SQL query with security checks."""
-    sql_lower = sql.lower()
+    """Execute SQL query with security checks against the lakehouse."""
+    from automic_etl.db.data_service import get_data_service
 
-    # Sample data based on query content
-    if "customer_summary" in sql_lower or ("customer" in sql_lower and "order" not in sql_lower):
+    # Validate SQL is read-only
+    sql_lower = sql.lower().strip()
+    dangerous_keywords = ["drop", "truncate", "delete", "alter", "create", "insert", "update", "grant", "revoke"]
+    for keyword in dangerous_keywords:
+        if f" {keyword} " in f" {sql_lower} " or sql_lower.startswith(keyword):
+            raise ValueError(f"Dangerous SQL operation '{keyword}' not allowed")
+
+    # Execute query via data service
+    try:
+        data_service = get_data_service()
+        result = data_service.execute_sql(sql, limit=limit)
+
         return {
-            "columns": ["customer_id", "customer_name", "email", "segment", "lifetime_value", "total_orders"],
-            "data": [
-                [1, "John Doe", "john@example.com", "Premium", 15420.50, 45],
-                [2, "Jane Smith", "jane@example.com", "Premium", 12350.75, 38],
-                [3, "Bob Johnson", "bob@example.com", "Standard", 8920.00, 32],
-                [4, "Alice Brown", "alice@example.com", "Premium", 7845.25, 28],
-                [5, "Charlie Wilson", "charlie@example.com", "Standard", 6230.00, 25],
-            ][:limit]
+            "columns": result.get("columns", []),
+            "data": result.get("data", []),
         }
-
-    elif "date_trunc" in sql_lower or "month" in sql_lower:
+    except Exception as e:
+        # Return empty result on error
         return {
-            "columns": ["month", "order_count", "total_sales", "avg_order_value"],
-            "data": [
-                ["2024-01", 450, 125000.00, 277.78],
-                ["2024-02", 478, 132000.00, 276.15],
-                ["2024-03", 512, 145000.00, 283.20],
-                ["2024-04", 490, 138000.00, 281.63],
-                ["2024-05", 534, 152000.00, 284.64],
-                ["2024-06", 567, 168000.00, 296.30],
-            ][:limit]
-        }
-
-    elif "category" in sql_lower and "product" in sql_lower:
-        return {
-            "columns": ["category", "product_count", "avg_price", "total_stock"],
-            "data": [
-                ["Electronics", 245, 299.99, 12500],
-                ["Clothing", 189, 59.99, 8900],
-                ["Home & Garden", 156, 89.99, 6700],
-                ["Sports", 98, 129.99, 4500],
-                ["Books", 312, 24.99, 15000],
-            ][:limit]
-        }
-
-    elif "stock" in sql_lower:
-        return {
-            "columns": ["product_id", "product_name", "category", "stock_quantity", "price"],
-            "data": [
-                [1001, "Widget Pro", "Electronics", 3, 149.99],
-                [1002, "Gadget X", "Electronics", 5, 79.99],
-                [1003, "Tool Set", "Hardware", 8, 199.99],
-                [1004, "Smart Watch", "Electronics", 2, 299.99],
-                [1005, "Headphones", "Electronics", 7, 159.99],
-            ][:limit]
-        }
-
-    elif "event" in sql_lower:
-        return {
-            "columns": ["event_type", "event_count", "unique_users"],
-            "data": [
-                ["page_view", 45230, 8920],
-                ["click", 23450, 6780],
-                ["purchase", 1234, 890],
-                ["signup", 567, 567],
-                ["logout", 2340, 1890],
-            ][:limit]
-        }
-
-    elif "order_items" in sql_lower or "join" in sql_lower:
-        return {
-            "columns": ["customer_name", "segment", "order_count", "total_spent", "avg_order_value"],
-            "data": [
-                ["John Doe", "Premium", 45, 15420.50, 342.68],
-                ["Jane Smith", "Premium", 38, 12350.75, 325.02],
-                ["Bob Johnson", "Standard", 32, 8920.00, 278.75],
-                ["Alice Brown", "Premium", 28, 7845.25, 280.19],
-                ["Charlie Wilson", "Standard", 25, 6230.00, 249.20],
-            ][:limit]
-        }
-
-    else:
-        return {
-            "columns": ["order_id", "customer_id", "order_date", "status", "total_amount", "payment_method"],
-            "data": [
-                [10001, 1, "2024-06-15T10:30:00", "completed", 234.50, "credit_card"],
-                [10002, 2, "2024-06-15T11:45:00", "completed", 567.80, "paypal"],
-                [10003, 3, "2024-06-15T14:20:00", "pending", 123.40, "credit_card"],
-                [10004, 1, "2024-06-14T09:15:00", "completed", 890.00, "bank_transfer"],
-                [10005, 4, "2024-06-14T16:30:00", "completed", 456.70, "credit_card"],
-            ][:limit]
+            "columns": [],
+            "data": [],
+            "error": str(e),
         }
 
 
@@ -628,8 +517,8 @@ async def execute_natural_language_query(
             "messages": [],
             "tables_used": set(),
             "last_sql": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": utc_now(),
+            "updated_at": utc_now(),
         }
 
     conversation = _conversations[conversation_id]
@@ -668,7 +557,7 @@ async def execute_natural_language_query(
             "executed_sql": sql,
             "status": "failed",
             "error": str(e),
-            "executed_at": datetime.utcnow(),
+            "executed_at": utc_now(),
             "user_id": user_id,
         })
         raise HTTPException(status_code=400, detail=str(e))
@@ -694,17 +583,17 @@ async def execute_natural_language_query(
     conversation["messages"].append({
         "role": "user",
         "content": request.query,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     })
     conversation["messages"].append({
         "role": "assistant",
         "content": explanation,
         "sql": sql,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
     })
     conversation["last_sql"] = sql
     conversation["tables_used"].update(tables_used)
-    conversation["updated_at"] = datetime.utcnow()
+    conversation["updated_at"] = utc_now()
 
     # Log to history
     history = _get_company_history(company_id)
@@ -719,7 +608,7 @@ async def execute_natural_language_query(
         "intent": intent,
         "confidence": confidence,
         "tables_used": tables_used,
-        "executed_at": datetime.utcnow(),
+        "executed_at": utc_now(),
         "user_id": user_id,
     })
 
@@ -929,11 +818,9 @@ async def get_rate_limit_status(
 
     Returns current usage and remaining limits.
     """
-    from datetime import timedelta
-
     company_id = ctx.tenant.company_id
     user_id = ctx.user.user_id
-    now = datetime.utcnow()
+    now = utc_now()
     minute_ago = now - timedelta(minutes=1)
     day_ago = now - timedelta(days=1)
 
@@ -991,8 +878,9 @@ async def get_available_schemas(
     if ctx.can_access_tier("gold"):
         allowed_tiers.append("gold")
 
+    db_schemas = _get_table_schemas(ctx)
     schemas = []
-    for table_name, schema_info in SAMPLE_SCHEMAS.items():
+    for table_name, schema_info in db_schemas.items():
         if schema_info.get("tier", "silver") in allowed_tiers:
             schemas.append({
                 "name": table_name,
@@ -1056,7 +944,7 @@ async def execute_query(
             "executed_sql": executed_sql,
             "status": "failed",
             "error": str(e),
-            "executed_at": datetime.utcnow(),
+            "executed_at": utc_now(),
             "user_id": ctx.user.user_id,
         })
         raise HTTPException(status_code=400, detail=str(e))
@@ -1079,7 +967,7 @@ async def execute_query(
         "status": "completed",
         "row_count": len(result["data"]),
         "execution_time_ms": execution_time_ms,
-        "executed_at": datetime.utcnow(),
+        "executed_at": utc_now(),
         "user_id": ctx.user.user_id,
     })
 

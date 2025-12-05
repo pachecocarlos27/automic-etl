@@ -13,6 +13,7 @@ import structlog
 from automic_etl.connectors.base import BaseConnector, ExtractionResult
 from automic_etl.core.config import Settings
 from automic_etl.core.exceptions import ExtractionError
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -82,7 +83,7 @@ class BatchExtractor:
             BatchResult with combined data
         """
         batch_size = batch_size or self.batch_size
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         errors: list[Exception] = []
         batches: list[pl.DataFrame] = []
         batch_num = 0
@@ -131,7 +132,7 @@ class BatchExtractor:
         # Combine batches
         combined = pl.concat(batches) if batches else pl.DataFrame()
 
-        end_time = datetime.utcnow()
+        end_time = utc_now()
 
         result = BatchResult(
             data=combined,
@@ -173,7 +174,7 @@ class BatchExtractor:
             BatchResult with combined data
         """
         max_workers = max_workers or self.parallel_workers
-        start_time = datetime.utcnow()
+        start_time = utc_now()
         errors: list[Exception] = []
         results: list[pl.DataFrame] = []
 
@@ -205,7 +206,7 @@ class BatchExtractor:
                     errors.append(e)
 
         combined = pl.concat(results) if results else pl.DataFrame()
-        end_time = datetime.utcnow()
+        end_time = utc_now()
 
         return BatchResult(
             data=combined,

@@ -14,6 +14,7 @@ import structlog
 
 from automic_etl.core.config import LLMProvider, Settings
 from automic_etl.core.exceptions import LLMError
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -158,7 +159,7 @@ class RateLimiter:
         Returns:
             Tuple of (allowed, reason if not allowed)
         """
-        now = datetime.utcnow()
+        now = utc_now()
         minute_ago = now - timedelta(minutes=1)
         day_ago = now - timedelta(days=1)
 
@@ -188,7 +189,7 @@ class RateLimiter:
 
     def record_request(self, tokens_used: int):
         """Record a completed request."""
-        now = datetime.utcnow()
+        now = utc_now()
         self._minute_requests.append(now)
         self._minute_tokens.append((now, tokens_used))
         self._day_requests.append(now)
@@ -196,7 +197,7 @@ class RateLimiter:
 
     def get_usage(self) -> dict[str, Any]:
         """Get current usage statistics."""
-        now = datetime.utcnow()
+        now = utc_now()
         minute_ago = now - timedelta(minutes=1)
         day_ago = now - timedelta(days=1)
 

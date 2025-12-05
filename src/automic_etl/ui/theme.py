@@ -1,4 +1,4 @@
-"""Material Design 3 theme system for Automic ETL UI."""
+"""Sleek, minimal design system for Automic ETL UI."""
 
 from __future__ import annotations
 
@@ -14,182 +14,148 @@ class ThemeMode(str, Enum):
 
 
 @dataclass
-class MaterialColorPalette:
-    """Material Design 3 color palette with semantic tokens."""
-    
-    # Primary - Deep Indigo (professional, trustworthy)
-    primary: str = "#3F51B5"
-    primary_light: str = "#757CE8"
-    primary_dark: str = "#002884"
+class ColorPalette:
+    """Modern, minimal color palette with refined aesthetics."""
+
+    # Primary - Deep slate blue (sophisticated, professional)
+    primary: str = "#0F172A"
+    primary_hover: str = "#1E293B"
+    primary_muted: str = "#334155"
     on_primary: str = "#FFFFFF"
-    primary_container: str = "#E8EAF6"
-    on_primary_container: str = "#1A237E"
-    
-    # Secondary - Teal (complementary accent)
-    secondary: str = "#009688"
-    secondary_light: str = "#52C7B8"
-    secondary_dark: str = "#00675B"
-    on_secondary: str = "#FFFFFF"
-    secondary_container: str = "#E0F2F1"
-    on_secondary_container: str = "#004D40"
-    
-    # Tertiary - Amber (for highlights, warnings)
-    tertiary: str = "#FF8F00"
-    tertiary_light: str = "#FFC046"
-    tertiary_dark: str = "#C56000"
-    on_tertiary: str = "#FFFFFF"
-    tertiary_container: str = "#FFF8E1"
-    on_tertiary_container: str = "#E65100"
-    
-    # Status colors (Material guidelines)
-    error: str = "#D32F2F"
-    error_light: str = "#FFCDD2"
-    on_error: str = "#FFFFFF"
-    error_container: str = "#FFEBEE"
-    on_error_container: str = "#B71C1C"
-    
-    warning: str = "#ED6C02"
-    warning_light: str = "#FFE0B2"
-    on_warning: str = "#FFFFFF"
-    warning_container: str = "#FFF3E0"
-    on_warning_container: str = "#E65100"
-    
-    success: str = "#2E7D32"
-    success_light: str = "#C8E6C9"
-    on_success: str = "#FFFFFF"
-    success_container: str = "#E8F5E9"
-    on_success_container: str = "#1B5E20"
-    
-    info: str = "#0288D1"
-    info_light: str = "#B3E5FC"
-    on_info: str = "#FFFFFF"
-    info_container: str = "#E1F5FE"
-    on_info_container: str = "#01579B"
-    
+
+    # Accent - Vibrant indigo (for CTAs and highlights)
+    accent: str = "#6366F1"
+    accent_hover: str = "#4F46E5"
+    accent_light: str = "#EEF2FF"
+    on_accent: str = "#FFFFFF"
+
+    # Success
+    success: str = "#10B981"
+    success_light: str = "#D1FAE5"
+    success_dark: str = "#059669"
+
+    # Warning
+    warning: str = "#F59E0B"
+    warning_light: str = "#FEF3C7"
+    warning_dark: str = "#D97706"
+
+    # Error
+    error: str = "#EF4444"
+    error_light: str = "#FEE2E2"
+    error_dark: str = "#DC2626"
+
+    # Info
+    info: str = "#3B82F6"
+    info_light: str = "#DBEAFE"
+    info_dark: str = "#2563EB"
+
+    # Neutrals - Refined grayscale
+    white: str = "#FFFFFF"
+    gray_50: str = "#F8FAFC"
+    gray_100: str = "#F1F5F9"
+    gray_200: str = "#E2E8F0"
+    gray_300: str = "#CBD5E1"
+    gray_400: str = "#94A3B8"
+    gray_500: str = "#64748B"
+    gray_600: str = "#475569"
+    gray_700: str = "#334155"
+    gray_800: str = "#1E293B"
+    gray_900: str = "#0F172A"
+    black: str = "#020617"
+
     # Surface colors
-    background: str = "#FAFAFA"
-    on_background: str = "#212121"
+    background: str = "#FAFBFC"
     surface: str = "#FFFFFF"
-    on_surface: str = "#212121"
-    surface_variant: str = "#F5F5F5"
-    on_surface_variant: str = "#616161"
-    surface_container: str = "#EEEEEE"
-    surface_container_high: str = "#E0E0E0"
-    surface_container_low: str = "#F5F5F5"
-    
-    # Outline and borders
-    outline: str = "#BDBDBD"
-    outline_variant: str = "#E0E0E0"
-    
-    # Inverse colors
-    inverse_surface: str = "#303030"
-    inverse_on_surface: str = "#F5F5F5"
-    inverse_primary: str = "#9FA8DA"
-    
-    # Scrim and shadow
-    scrim: str = "#000000"
-    shadow: str = "#000000"
-    
-    # Medallion architecture colors
-    bronze: str = "#8D6E63"
-    bronze_light: str = "#EFEBE9"
-    silver: str = "#78909C"
-    silver_light: str = "#ECEFF1"
-    gold: str = "#FFA000"
-    gold_light: str = "#FFF8E1"
+    surface_elevated: str = "#FFFFFF"
+    surface_muted: str = "#F8FAFC"
+
+    # Text colors
+    text_primary: str = "#0F172A"
+    text_secondary: str = "#475569"
+    text_muted: str = "#94A3B8"
+    text_inverse: str = "#FFFFFF"
+
+    # Border colors
+    border: str = "#E2E8F0"
+    border_hover: str = "#CBD5E1"
+    border_focus: str = "#6366F1"
+
+    # Medallion architecture colors (refined)
+    bronze: str = "#A16207"
+    bronze_bg: str = "#FEF9C3"
+    silver: str = "#6B7280"
+    silver_bg: str = "#F3F4F6"
+    gold: str = "#CA8A04"
+    gold_bg: str = "#FEF3C7"
 
 
 @dataclass
-class DarkMaterialColorPalette(MaterialColorPalette):
-    """Material Design 3 dark theme palette."""
-    
-    # Primary - Indigo (lightened for dark mode)
-    primary: str = "#9FA8DA"
-    primary_light: str = "#C5CAE9"
-    primary_dark: str = "#5C6BC0"
-    on_primary: str = "#1A237E"
-    primary_container: str = "#3949AB"
-    on_primary_container: str = "#E8EAF6"
-    
-    # Secondary - Teal (lightened for dark mode)
-    secondary: str = "#80CBC4"
-    secondary_light: str = "#B2DFDB"
-    secondary_dark: str = "#4DB6AC"
-    on_secondary: str = "#004D40"
-    secondary_container: str = "#00796B"
-    on_secondary_container: str = "#E0F2F1"
-    
-    # Tertiary - Amber
-    tertiary: str = "#FFB74D"
-    tertiary_light: str = "#FFE0B2"
-    tertiary_dark: str = "#FFA726"
-    on_tertiary: str = "#E65100"
-    tertiary_container: str = "#F57C00"
-    on_tertiary_container: str = "#FFF8E1"
-    
-    # Status colors (lightened for dark mode)
-    error: str = "#EF9A9A"
-    error_light: str = "#FFCDD2"
-    on_error: str = "#B71C1C"
-    error_container: str = "#C62828"
-    on_error_container: str = "#FFEBEE"
-    
-    warning: str = "#FFCC80"
-    warning_light: str = "#FFE0B2"
-    on_warning: str = "#E65100"
-    warning_container: str = "#EF6C00"
-    on_warning_container: str = "#FFF3E0"
-    
-    success: str = "#A5D6A7"
-    success_light: str = "#C8E6C9"
-    on_success: str = "#1B5E20"
-    success_container: str = "#388E3C"
-    on_success_container: str = "#E8F5E9"
-    
-    info: str = "#81D4FA"
-    info_light: str = "#B3E5FC"
-    on_info: str = "#01579B"
-    info_container: str = "#0277BD"
-    on_info_container: str = "#E1F5FE"
-    
-    # Surface colors (dark mode)
-    background: str = "#121212"
-    on_background: str = "#E0E0E0"
-    surface: str = "#1E1E1E"
-    on_surface: str = "#E0E0E0"
-    surface_variant: str = "#2C2C2C"
-    on_surface_variant: str = "#BDBDBD"
-    surface_container: str = "#252525"
-    surface_container_high: str = "#303030"
-    surface_container_low: str = "#1A1A1A"
-    
-    # Outline and borders (dark mode)
-    outline: str = "#616161"
-    outline_variant: str = "#424242"
-    
-    # Inverse colors
-    inverse_surface: str = "#E0E0E0"
-    inverse_on_surface: str = "#303030"
-    inverse_primary: str = "#3F51B5"
-    
-    # Medallion colors (adjusted for dark mode)
-    bronze: str = "#BCAAA4"
-    bronze_light: str = "#4E342E"
-    silver: str = "#B0BEC5"
-    silver_light: str = "#37474F"
-    gold: str = "#FFCA28"
-    gold_light: str = "#5D4037"
+class DarkColorPalette(ColorPalette):
+    """Dark theme color palette."""
+
+    # Primary inverted for dark mode
+    primary: str = "#F8FAFC"
+    primary_hover: str = "#E2E8F0"
+    primary_muted: str = "#CBD5E1"
+    on_primary: str = "#0F172A"
+
+    # Accent stays vibrant
+    accent: str = "#818CF8"
+    accent_hover: str = "#6366F1"
+    accent_light: str = "#1E1B4B"
+
+    # Status colors (slightly muted for dark)
+    success: str = "#34D399"
+    success_light: str = "#064E3B"
+    success_dark: str = "#10B981"
+
+    warning: str = "#FBBF24"
+    warning_light: str = "#78350F"
+    warning_dark: str = "#F59E0B"
+
+    error: str = "#F87171"
+    error_light: str = "#7F1D1D"
+    error_dark: str = "#EF4444"
+
+    info: str = "#60A5FA"
+    info_light: str = "#1E3A5F"
+    info_dark: str = "#3B82F6"
+
+    # Surface colors (dark)
+    background: str = "#0F172A"
+    surface: str = "#1E293B"
+    surface_elevated: str = "#334155"
+    surface_muted: str = "#1E293B"
+
+    # Text colors (inverted)
+    text_primary: str = "#F8FAFC"
+    text_secondary: str = "#CBD5E1"
+    text_muted: str = "#64748B"
+    text_inverse: str = "#0F172A"
+
+    # Border colors (dark)
+    border: str = "#334155"
+    border_hover: str = "#475569"
+    border_focus: str = "#818CF8"
+
+    # Medallion (dark mode)
+    bronze: str = "#FCD34D"
+    bronze_bg: str = "#422006"
+    silver: str = "#D1D5DB"
+    silver_bg: str = "#374151"
+    gold: str = "#FBBF24"
+    gold_bg: str = "#78350F"
 
 
 @dataclass
 class Theme:
     """Theme configuration."""
     mode: ThemeMode = ThemeMode.LIGHT
-    colors: MaterialColorPalette = field(default_factory=MaterialColorPalette)
+    colors: ColorPalette = field(default_factory=ColorPalette)
 
 
-LIGHT_THEME = Theme(mode=ThemeMode.LIGHT, colors=MaterialColorPalette())
-DARK_THEME = Theme(mode=ThemeMode.DARK, colors=DarkMaterialColorPalette())
+LIGHT_THEME = Theme(mode=ThemeMode.LIGHT, colors=ColorPalette())
+DARK_THEME = Theme(mode=ThemeMode.DARK, colors=DarkColorPalette())
 
 
 def get_theme(mode: ThemeMode | str = ThemeMode.LIGHT) -> Theme:
@@ -200,542 +166,742 @@ def get_theme(mode: ThemeMode | str = ThemeMode.LIGHT) -> Theme:
 
 
 def get_streamlit_css(theme: Theme | None = None) -> str:
-    """Generate Material Design 3 Streamlit CSS."""
+    """Generate sleek, minimal Streamlit CSS."""
     theme = theme or LIGHT_THEME
     c = theme.colors
     is_dark = theme.mode == ThemeMode.DARK
-    
+
     return f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
     :root {{
-        /* Material 3 Semantic Tokens */
-        --md-sys-color-primary: {c.primary};
-        --md-sys-color-primary-light: {c.primary_light};
-        --md-sys-color-primary-dark: {c.primary_dark};
-        --md-sys-color-on-primary: {c.on_primary};
-        --md-sys-color-primary-container: {c.primary_container};
-        --md-sys-color-on-primary-container: {c.on_primary_container};
-        
-        --md-sys-color-secondary: {c.secondary};
-        --md-sys-color-secondary-light: {c.secondary_light};
-        --md-sys-color-secondary-dark: {c.secondary_dark};
-        --md-sys-color-on-secondary: {c.on_secondary};
-        --md-sys-color-secondary-container: {c.secondary_container};
-        --md-sys-color-on-secondary-container: {c.on_secondary_container};
-        
-        --md-sys-color-tertiary: {c.tertiary};
-        --md-sys-color-on-tertiary: {c.on_tertiary};
-        --md-sys-color-tertiary-container: {c.tertiary_container};
-        
-        --md-sys-color-error: {c.error};
-        --md-sys-color-error-light: {c.error_light};
-        --md-sys-color-on-error: {c.on_error};
-        --md-sys-color-error-container: {c.error_container};
-        --md-sys-color-on-error-container: {c.on_error_container};
-        
-        --md-sys-color-warning: {c.warning};
-        --md-sys-color-warning-container: {c.warning_container};
-        --md-sys-color-on-warning-container: {c.on_warning_container};
-        
-        --md-sys-color-success: {c.success};
-        --md-sys-color-success-container: {c.success_container};
-        --md-sys-color-on-success-container: {c.on_success_container};
-        
-        --md-sys-color-info: {c.info};
-        --md-sys-color-info-container: {c.info_container};
-        --md-sys-color-on-info-container: {c.on_info_container};
-        
-        --md-sys-color-background: {c.background};
-        --md-sys-color-on-background: {c.on_background};
-        --md-sys-color-surface: {c.surface};
-        --md-sys-color-on-surface: {c.on_surface};
-        --md-sys-color-surface-variant: {c.surface_variant};
-        --md-sys-color-on-surface-variant: {c.on_surface_variant};
-        --md-sys-color-surface-container: {c.surface_container};
-        --md-sys-color-surface-container-high: {c.surface_container_high};
-        --md-sys-color-surface-container-low: {c.surface_container_low};
-        
-        --md-sys-color-outline: {c.outline};
-        --md-sys-color-outline-variant: {c.outline_variant};
-        
-        --md-sys-color-inverse-surface: {c.inverse_surface};
-        --md-sys-color-inverse-on-surface: {c.inverse_on_surface};
-        --md-sys-color-inverse-primary: {c.inverse_primary};
-        
-        /* Medallion colors */
-        --md-custom-bronze: {c.bronze};
-        --md-custom-bronze-container: {c.bronze_light};
-        --md-custom-silver: {c.silver};
-        --md-custom-silver-container: {c.silver_light};
-        --md-custom-gold: {c.gold};
-        --md-custom-gold-container: {c.gold_light};
-        
-        /* Material elevation shadows */
-        --md-sys-elevation-1: 0 1px 2px rgba(0,0,0,0.05);
-        --md-sys-elevation-2: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-        --md-sys-elevation-3: 0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
-        --md-sys-elevation-4: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
-        --md-sys-elevation-5: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04);
-        
-        /* Material shape tokens */
-        --md-sys-shape-corner-none: 0px;
-        --md-sys-shape-corner-xs: 4px;
-        --md-sys-shape-corner-sm: 8px;
-        --md-sys-shape-corner-md: 12px;
-        --md-sys-shape-corner-lg: 16px;
-        --md-sys-shape-corner-xl: 28px;
-        --md-sys-shape-corner-full: 9999px;
-        
-        /* Legacy aliases for compatibility */
-        --primary: var(--md-sys-color-primary);
-        --primary-hover: var(--md-sys-color-primary-dark);
-        --text-primary: var(--md-sys-color-on-surface);
-        --text-secondary: var(--md-sys-color-on-surface-variant);
-        --text-muted: var(--md-sys-color-outline);
-        --bg: var(--md-sys-color-background);
-        --surface: var(--md-sys-color-surface);
-        --border: var(--md-sys-color-outline-variant);
-        --success: var(--md-sys-color-success);
-        --warning: var(--md-sys-color-warning);
-        --danger: var(--md-sys-color-error);
+        /* Core colors */
+        --primary: {c.primary};
+        --primary-hover: {c.primary_hover};
+        --primary-muted: {c.primary_muted};
+        --on-primary: {c.on_primary};
+
+        --accent: {c.accent};
+        --accent-hover: {c.accent_hover};
+        --accent-light: {c.accent_light};
+        --on-accent: {c.on_accent};
+
+        /* Status colors */
+        --success: {c.success};
+        --success-light: {c.success_light};
+        --warning: {c.warning};
+        --warning-light: {c.warning_light};
+        --error: {c.error};
+        --error-light: {c.error_light};
+        --info: {c.info};
+        --info-light: {c.info_light};
+
+        /* Surfaces */
+        --bg: {c.background};
+        --surface: {c.surface};
+        --surface-elevated: {c.surface_elevated};
+        --surface-muted: {c.surface_muted};
+
+        /* Text */
+        --text: {c.text_primary};
+        --text-secondary: {c.text_secondary};
+        --text-muted: {c.text_muted};
+        --text-inverse: {c.text_inverse};
+
+        /* Borders */
+        --border: {c.border};
+        --border-hover: {c.border_hover};
+        --border-focus: {c.border_focus};
+
+        /* Medallion */
+        --bronze: {c.bronze};
+        --bronze-bg: {c.bronze_bg};
+        --silver: {c.silver};
+        --silver-bg: {c.silver_bg};
+        --gold: {c.gold};
+        --gold-bg: {c.gold_bg};
+
+        /* Spacing scale */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+
+        /* Border radius */
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+        --radius-full: 9999px;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+        /* Transitions */
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
     }}
-    
+
+    /* ========================================
+       BASE STYLES
+       ======================================== */
+
     .stApp {{
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: var(--md-sys-color-background);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }}
-    
-    /* Typography - Material type scale */
+
+    /* Typography */
     h1, h2, h3, h4, h5, h6 {{
         font-family: 'Inter', sans-serif;
-        color: var(--md-sys-color-on-surface);
+        color: var(--text);
         font-weight: 600;
-        letter-spacing: -0.025em;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0;
     }}
-    
-    h1 {{ font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; }}
+
+    h1 {{ font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; }}
     h2 {{ font-size: 1.5rem; font-weight: 600; }}
     h3 {{ font-size: 1.25rem; font-weight: 600; }}
     h4 {{ font-size: 1.125rem; font-weight: 500; }}
-    
-    p, span, div {{ color: var(--md-sys-color-on-surface-variant); }}
-    
-    /* Sidebar - Material surface with elevation */
+    h5 {{ font-size: 1rem; font-weight: 500; }}
+
+    p, span, div, label {{
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }}
+
+    /* ========================================
+       SIDEBAR - Sleek dark sidebar
+       ======================================== */
+
     [data-testid="stSidebar"] {{
-        background: var(--md-sys-color-inverse-surface);
-        border-right: none;
-        box-shadow: var(--md-sys-elevation-2);
+        background: {c.gray_900};
+        border-right: 1px solid {c.gray_800};
     }}
-    
+
+    [data-testid="stSidebar"] > div:first-child {{
+        padding: var(--space-4);
+    }}
+
     [data-testid="stSidebar"] * {{
-        color: var(--md-sys-color-inverse-on-surface) !important;
+        color: {c.gray_300} !important;
     }}
-    
-    [data-testid="stSidebar"] .stRadio > div {{
-        gap: 4px;
-    }}
-    
-    [data-testid="stSidebar"] .stRadio > div > label {{
-        padding: 0.875rem 1rem;
-        border-radius: var(--md-sys-shape-corner-md);
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.7) !important;
-        background: transparent;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        margin: 0;
-    }}
-    
-    [data-testid="stSidebar"] .stRadio > div > label:hover {{
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.9) !important;
-    }}
-    
-    [data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {{
-        background: var(--md-sys-color-primary);
-        color: var(--md-sys-color-on-primary) !important;
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {{
+        color: {c.white} !important;
         font-weight: 600;
-        box-shadow: var(--md-sys-elevation-1);
     }}
-    
-    [data-testid="stSidebar"] hr {{
-        border-color: rgba(255, 255, 255, 0.12);
-        margin: 1rem 0;
+
+    /* Sidebar navigation items */
+    [data-testid="stSidebar"] .stRadio > div {{
+        gap: 2px;
     }}
-    
+
+    [data-testid="stSidebar"] .stRadio > div > label {{
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        font-weight: 450;
+        color: {c.gray_400} !important;
+        background: transparent;
+        transition: var(--transition-fast);
+        margin: 0;
+        cursor: pointer;
+    }}
+
+    [data-testid="stSidebar"] .stRadio > div > label:hover {{
+        background: rgba(255, 255, 255, 0.06);
+        color: {c.white} !important;
+    }}
+
+    [data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {{
+        background: {c.accent};
+        color: {c.white} !important;
+        font-weight: 500;
+    }}
+
+    /* Sidebar search input */
     [data-testid="stSidebar"] .stTextInput input {{
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: var(--md-sys-color-inverse-on-surface) !important;
-        border-radius: var(--md-sys-shape-corner-md);
-        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid {c.gray_700};
+        color: {c.white} !important;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        padding: 10px 12px;
+        transition: var(--transition-fast);
     }}
-    
+
     [data-testid="stSidebar"] .stTextInput input:focus {{
-        border-color: var(--md-sys-color-primary);
-        background: rgba(255, 255, 255, 0.12);
+        border-color: {c.accent};
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }}
-    
+
     [data-testid="stSidebar"] .stTextInput input::placeholder {{
-        color: rgba(255, 255, 255, 0.5);
+        color: {c.gray_500};
     }}
-    
-    /* Main content area */
+
+    [data-testid="stSidebar"] hr {{
+        border-color: {c.gray_800};
+        margin: var(--space-4) 0;
+    }}
+
+    /* ========================================
+       MAIN CONTENT
+       ======================================== */
+
     .main .block-container {{
-        padding: 2rem 3rem;
-        max-width: 1280px;
+        padding: var(--space-8) var(--space-10);
+        max-width: 1400px;
     }}
-    
-    /* Material Buttons */
+
+    /* ========================================
+       BUTTONS - Minimal, refined
+       ======================================== */
+
     .stButton > button {{
-        background: var(--md-sys-color-surface);
-        color: var(--md-sys-color-primary);
-        border: 1px solid var(--md-sys-color-outline-variant);
-        border-radius: var(--md-sys-shape-corner-full);
-        padding: 0.625rem 1.5rem;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 10px 16px;
         font-weight: 500;
         font-size: 0.875rem;
-        letter-spacing: 0.02em;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: var(--transition-fast);
         box-shadow: none;
+        line-height: 1;
     }}
-    
+
     .stButton > button:hover {{
-        background: var(--md-sys-color-primary-container);
-        border-color: var(--md-sys-color-primary);
-        box-shadow: var(--md-sys-elevation-1);
+        background: var(--surface-muted);
+        border-color: var(--border-hover);
     }}
-    
+
+    .stButton > button:active {{
+        transform: scale(0.98);
+    }}
+
+    /* Primary button */
     .stButton > button[kind="primary"],
     .stButton > button[data-testid="baseButton-primary"] {{
-        background: var(--md-sys-color-primary);
-        color: var(--md-sys-color-on-primary);
+        background: var(--accent);
+        color: var(--on-accent);
         border: none;
-        box-shadow: var(--md-sys-elevation-1);
+        box-shadow: var(--shadow-sm);
     }}
-    
+
     .stButton > button[kind="primary"]:hover,
     .stButton > button[data-testid="baseButton-primary"]:hover {{
-        background: var(--md-sys-color-primary-dark);
-        box-shadow: var(--md-sys-elevation-2);
+        background: var(--accent-hover);
+        box-shadow: var(--shadow-md);
     }}
-    
-    /* Secondary button style */
+
+    /* Secondary button */
     .stButton > button[kind="secondary"],
     .stButton > button[data-testid="baseButton-secondary"] {{
-        background: var(--md-sys-color-secondary-container);
-        color: var(--md-sys-color-on-secondary-container);
-        border: none;
+        background: var(--surface-muted);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
     }}
-    
+
     .stButton > button[kind="secondary"]:hover,
     .stButton > button[data-testid="baseButton-secondary"]:hover {{
-        background: var(--md-sys-color-secondary);
-        color: var(--md-sys-color-on-secondary);
+        background: var(--border);
+        color: var(--text);
     }}
-    
-    /* Material Inputs */
+
+    /* ========================================
+       INPUTS - Clean, minimal
+       ======================================== */
+
     .stTextInput > div > div > input,
-    .stSelectbox > div > div,
+    .stNumberInput > div > div > input,
     .stTextArea textarea {{
-        background: var(--md-sys-color-surface);
-        border: 1px solid var(--md-sys-color-outline);
-        border-radius: var(--md-sys-shape-corner-sm);
-        color: var(--md-sys-color-on-surface);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        color: var(--text);
         font-size: 0.875rem;
-        transition: all 0.2s ease;
+        padding: 10px 12px;
+        transition: var(--transition-fast);
     }}
-    
+
     .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus,
     .stTextArea textarea:focus {{
-        border-color: var(--md-sys-color-primary);
-        border-width: 2px;
-        box-shadow: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         outline: none;
     }}
-    
+
     .stTextInput > label,
     .stTextArea > label,
-    .stSelectbox > label {{
-        color: var(--md-sys-color-on-surface-variant);
+    .stSelectbox > label,
+    .stNumberInput > label {{
+        color: var(--text-secondary);
         font-size: 0.875rem;
         font-weight: 500;
+        margin-bottom: var(--space-1);
     }}
-    
-    /* Material Tabs */
+
+    /* Select boxes */
+    .stSelectbox > div > div {{
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+    }}
+
+    .stSelectbox > div > div:hover {{
+        border-color: var(--border-hover);
+    }}
+
+    /* Multiselect */
+    .stMultiSelect > div > div {{
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+    }}
+
+    /* ========================================
+       TABS - Segmented control style
+       ======================================== */
+
     .stTabs [data-baseweb="tab-list"] {{
         gap: 0;
-        background: var(--md-sys-color-surface-container-low);
+        background: var(--surface-muted);
         padding: 4px;
-        border-radius: var(--md-sys-shape-corner-lg);
-        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
     }}
-    
+
     .stTabs [data-baseweb="tab"] {{
-        border-radius: var(--md-sys-shape-corner-md);
-        padding: 0.625rem 1.25rem;
-        color: var(--md-sys-color-on-surface-variant);
+        border-radius: var(--radius-md);
+        padding: 8px 16px;
+        color: var(--text-muted);
         font-weight: 500;
         font-size: 0.875rem;
         background: transparent;
         border: none;
-        transition: all 0.2s ease;
+        transition: var(--transition-fast);
     }}
-    
+
     .stTabs [data-baseweb="tab"]:hover {{
-        background: var(--md-sys-color-surface-container);
+        color: var(--text-secondary);
+        background: var(--surface);
     }}
-    
+
     .stTabs [aria-selected="true"] {{
-        background: var(--md-sys-color-surface);
-        color: var(--md-sys-color-primary);
-        box-shadow: var(--md-sys-elevation-1);
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: var(--shadow-sm);
     }}
-    
-    /* Material Metrics */
+
+    .stTabs [data-baseweb="tab-highlight"] {{
+        display: none;
+    }}
+
+    .stTabs [data-baseweb="tab-border"] {{
+        display: none;
+    }}
+
+    /* ========================================
+       METRICS - Clean display
+       ======================================== */
+
     [data-testid="stMetricLabel"] {{
-        color: var(--md-sys-color-on-surface-variant);
+        color: var(--text-muted);
         font-size: 0.75rem;
         font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.05em;
     }}
-    
+
     [data-testid="stMetricValue"] {{
-        color: var(--md-sys-color-on-surface);
-        font-size: 1.875rem;
+        color: var(--text);
+        font-size: 2rem;
         font-weight: 700;
         letter-spacing: -0.02em;
     }}
-    
+
     [data-testid="stMetricDelta"] {{
         font-size: 0.75rem;
         font-weight: 500;
     }}
-    
-    /* Material Data tables */
-    .stDataFrame {{
-        border: 1px solid var(--md-sys-color-outline-variant);
-        border-radius: var(--md-sys-shape-corner-md);
-        overflow: hidden;
-        box-shadow: var(--md-sys-elevation-1);
+
+    [data-testid="stMetricDelta"] svg {{
+        width: 12px;
+        height: 12px;
     }}
-    
+
+    /* ========================================
+       DATA TABLES - Minimal design
+       ======================================== */
+
+    .stDataFrame {{
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }}
+
     .stDataFrame thead th {{
-        background: var(--md-sys-color-surface-container);
+        background: var(--surface-muted);
         font-weight: 600;
         font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 0.875rem 1rem;
-        color: var(--md-sys-color-on-surface);
+        letter-spacing: 0.04em;
+        padding: 12px 16px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border);
     }}
-    
-    .stDataFrame tbody tr {{
-        transition: background 0.15s ease;
+
+    .stDataFrame tbody td {{
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--border);
     }}
-    
+
+    .stDataFrame tbody tr:last-child td {{
+        border-bottom: none;
+    }}
+
     .stDataFrame tbody tr:hover {{
-        background: var(--md-sys-color-surface-container-low);
+        background: var(--surface-muted);
     }}
-    
-    /* Material Expanders */
+
+    /* ========================================
+       EXPANDERS - Clean accordion
+       ======================================== */
+
     .streamlit-expanderHeader {{
-        background: var(--md-sys-color-surface);
-        border: 1px solid var(--md-sys-color-outline-variant);
-        border-radius: var(--md-sys-shape-corner-md);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
         font-weight: 500;
-        padding: 0.875rem 1rem;
-        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        padding: 12px 16px;
+        transition: var(--transition-fast);
     }}
-    
+
     .streamlit-expanderHeader:hover {{
-        background: var(--md-sys-color-surface-container-low);
-        border-color: var(--md-sys-color-outline);
+        background: var(--surface-muted);
+        border-color: var(--border-hover);
     }}
-    
-    /* Material Alerts */
+
+    .streamlit-expanderContent {{
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        padding: var(--space-4);
+    }}
+
+    /* ========================================
+       ALERTS - Subtle, informative
+       ======================================== */
+
     .stAlert {{
-        border-radius: var(--md-sys-shape-corner-md);
+        border-radius: var(--radius-md);
         border: none;
-        box-shadow: var(--md-sys-elevation-1);
+        padding: 12px 16px;
+        font-size: 0.875rem;
     }}
-    
-    /* Material Progress bar */
-    .stProgress > div > div {{
-        background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-primary-light));
-        border-radius: var(--md-sys-shape-corner-full);
+
+    div[data-testid="stAlert"][data-baseweb="notification"] {{
+        background: var(--info-light);
+        color: var(--info);
     }}
-    
+
+    /* ========================================
+       PROGRESS - Minimal bar
+       ======================================== */
+
     .stProgress > div {{
-        background: var(--md-sys-color-surface-container);
-        border-radius: var(--md-sys-shape-corner-full);
+        background: var(--surface-muted);
+        border-radius: var(--radius-full);
+        height: 6px;
     }}
-    
-    /* Material File uploader */
+
+    .stProgress > div > div {{
+        background: var(--accent);
+        border-radius: var(--radius-full);
+    }}
+
+    /* ========================================
+       FILE UPLOADER - Clean dropzone
+       ======================================== */
+
     [data-testid="stFileUploader"] {{
-        border: 2px dashed var(--md-sys-color-outline);
-        border-radius: var(--md-sys-shape-corner-lg);
-        padding: 2rem;
-        background: var(--md-sys-color-surface-container-low);
-        transition: all 0.2s ease;
+        border: 2px dashed var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-8);
+        background: var(--surface-muted);
+        transition: var(--transition-fast);
     }}
-    
+
     [data-testid="stFileUploader"]:hover {{
-        border-color: var(--md-sys-color-primary);
-        background: var(--md-sys-color-primary-container);
+        border-color: var(--accent);
+        background: var(--accent-light);
     }}
-    
-    /* Code blocks */
+
+    /* ========================================
+       CODE BLOCKS
+       ======================================== */
+
     code {{
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        background: var(--md-sys-color-surface-container);
-        padding: 0.125rem 0.5rem;
-        border-radius: var(--md-sys-shape-corner-xs);
+        background: var(--surface-muted);
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
         font-size: 0.85em;
-        color: var(--md-sys-color-secondary-dark);
+        color: var(--accent);
     }}
-    
+
     pre {{
-        background: var(--md-sys-color-inverse-surface);
-        color: var(--md-sys-color-inverse-on-surface);
-        padding: 1rem;
-        border-radius: var(--md-sys-shape-corner-md);
+        background: {c.gray_900};
+        color: {c.gray_100};
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        border: 1px solid {c.gray_800};
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }}
+
+    /* ========================================
+       CHECKBOXES & RADIOS
+       ======================================== */
+
+    .stCheckbox > label,
+    .stRadio > label {{
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }}
+
+    .stCheckbox > label > span:first-child,
+    .stRadio > label > span:first-child {{
+        border-color: var(--border);
+    }}
+
+    /* ========================================
+       DIVIDERS
+       ======================================== */
+
+    hr {{
         border: none;
-        box-shadow: var(--md-sys-elevation-2);
+        border-top: 1px solid var(--border);
+        margin: var(--space-6) 0;
     }}
-    
-    /* Scrollbar */
+
+    /* ========================================
+       SCROLLBAR - Minimal
+       ======================================== */
+
     ::-webkit-scrollbar {{
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
     }}
-    
+
     ::-webkit-scrollbar-track {{
         background: transparent;
     }}
-    
+
     ::-webkit-scrollbar-thumb {{
-        background: var(--md-sys-color-outline);
-        border-radius: var(--md-sys-shape-corner-full);
+        background: var(--border);
+        border-radius: var(--radius-full);
     }}
-    
+
     ::-webkit-scrollbar-thumb:hover {{
-        background: var(--md-sys-color-on-surface-variant);
+        background: var(--text-muted);
     }}
-    
-    /* Material Cards */
+
+    /* ========================================
+       CUSTOM COMPONENTS
+       ======================================== */
+
+    /* Card component */
     .card {{
-        background: var(--md-sys-color-surface);
-        border: 1px solid var(--md-sys-color-outline-variant);
-        border-radius: var(--md-sys-shape-corner-lg);
-        padding: 1.5rem;
-        box-shadow: var(--md-sys-elevation-1);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
     }}
-    
+
     .card-elevated {{
-        background: var(--md-sys-color-surface);
+        background: var(--surface);
         border: none;
-        border-radius: var(--md-sys-shape-corner-lg);
-        padding: 1.5rem;
-        box-shadow: var(--md-sys-elevation-2);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+        box-shadow: var(--shadow-md);
     }}
-    
-    .card-filled {{
-        background: var(--md-sys-color-surface-container);
-        border: none;
-        border-radius: var(--md-sys-shape-corner-lg);
-        padding: 1.5rem;
+
+    .card-hover {{
+        transition: var(--transition-fast);
     }}
-    
+
+    .card-hover:hover {{
+        border-color: var(--border-hover);
+        box-shadow: var(--shadow-sm);
+    }}
+
+    /* Metric card */
     .metric-card {{
-        background: var(--md-sys-color-surface);
-        border: 1px solid var(--md-sys-color-outline-variant);
-        border-radius: var(--md-sys-shape-corner-lg);
-        padding: 1.25rem;
-        transition: all 0.2s ease;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        transition: var(--transition-fast);
     }}
-    
+
     .metric-card:hover {{
-        box-shadow: var(--md-sys-elevation-2);
-        border-color: var(--md-sys-color-outline);
+        border-color: var(--border-hover);
     }}
-    
-    /* Material Status Chips */
-    .status-chip {{
+
+    /* Status badges */
+    .badge {{
         display: inline-flex;
         align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: var(--md-sys-shape-corner-sm);
+        padding: 4px 10px;
+        border-radius: var(--radius-full);
         font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.02em;
+        font-weight: 500;
+        letter-spacing: 0.01em;
     }}
-    
-    .status-success {{
-        color: var(--md-sys-color-on-success-container);
-        background: var(--md-sys-color-success-container);
+
+    .badge-success {{
+        color: var(--success);
+        background: var(--success-light);
     }}
-    
-    .status-warning {{
-        color: var(--md-sys-color-on-warning-container);
-        background: var(--md-sys-color-warning-container);
+
+    .badge-warning {{
+        color: var(--warning);
+        background: var(--warning-light);
     }}
-    
-    .status-error, .status-danger {{
-        color: var(--md-sys-color-on-error-container);
-        background: var(--md-sys-color-error-container);
+
+    .badge-error {{
+        color: var(--error);
+        background: var(--error-light);
     }}
-    
-    .status-info {{
-        color: var(--md-sys-color-on-info-container);
-        background: var(--md-sys-color-info-container);
+
+    .badge-info {{
+        color: var(--info);
+        background: var(--info-light);
     }}
-    
-    .status-primary {{
-        color: var(--md-sys-color-on-primary-container);
-        background: var(--md-sys-color-primary-container);
+
+    .badge-neutral {{
+        color: var(--text-secondary);
+        background: var(--surface-muted);
     }}
-    
-    .status-secondary {{
-        color: var(--md-sys-color-on-secondary-container);
-        background: var(--md-sys-color-secondary-container);
+
+    /* Medallion tier badges */
+    .tier-bronze {{
+        color: var(--bronze);
+        background: var(--bronze-bg);
     }}
-    
-    /* Medallion layer cards */
-    .medallion-bronze {{
-        border-left: 4px solid var(--md-custom-bronze);
-        background: var(--md-custom-bronze-container);
+
+    .tier-silver {{
+        color: var(--silver);
+        background: var(--silver-bg);
     }}
-    
-    .medallion-silver {{
-        border-left: 4px solid var(--md-custom-silver);
-        background: var(--md-custom-silver-container);
+
+    .tier-gold {{
+        color: var(--gold);
+        background: var(--gold-bg);
     }}
-    
-    .medallion-gold {{
-        border-left: 4px solid var(--md-custom-gold);
-        background: var(--md-custom-gold-container);
+
+    /* Empty state */
+    .empty-state {{
+        text-align: center;
+        padding: var(--space-12) var(--space-8);
+        color: var(--text-muted);
     }}
-    
-    /* Material Dividers */
-    hr {{
-        border: none;
-        border-top: 1px solid var(--md-sys-color-outline-variant);
-        margin: 1.5rem 0;
+
+    .empty-state-icon {{
+        font-size: 3rem;
+        margin-bottom: var(--space-4);
+        opacity: 0.5;
     }}
-    
-    /* Focus states for accessibility */
+
+    /* Page header */
+    .page-header {{
+        margin-bottom: var(--space-8);
+    }}
+
+    .page-header h1 {{
+        margin-bottom: var(--space-2);
+    }}
+
+    .page-header p {{
+        color: var(--text-muted);
+        font-size: 1rem;
+        margin: 0;
+    }}
+
+    /* Stat grid */
+    .stat-grid {{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+    }}
+
+    /* Action bar */
+    .action-bar {{
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-4) 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: var(--space-6);
+    }}
+
+    /* Focus states */
     *:focus-visible {{
-        outline: 2px solid var(--md-sys-color-primary);
+        outline: 2px solid var(--accent);
         outline-offset: 2px;
     }}
-    
-    /* Material transitions */
-    * {{
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Animations */
+    @keyframes fadeIn {{
+        from {{ opacity: 0; transform: translateY(4px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
     }}
+
+    .animate-in {{
+        animation: fadeIn 0.2s ease-out;
+    }}
+
+    /* Loading skeleton */
+    .skeleton {{
+        background: linear-gradient(90deg, var(--surface-muted) 25%, var(--border) 50%, var(--surface-muted) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: var(--radius-sm);
+    }}
+
+    @keyframes shimmer {{
+        0% {{ background-position: 200% 0; }}
+        100% {{ background-position: -200% 0; }}
+    }}
+
+    /* Hide Streamlit branding */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
     </style>
     """

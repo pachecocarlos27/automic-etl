@@ -2,11 +2,32 @@
 
 from __future__ import annotations
 
+import httpx
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Any
 
 from automic_etl.db.pipeline_service import get_pipeline_service
+
+# API base URL
+API_BASE_URL = "http://localhost:8000/api/v1"
+
+
+def _get_api_client() -> httpx.Client:
+    """Get configured HTTP client for API calls."""
+    return httpx.Client(base_url=API_BASE_URL, timeout=30.0)
+
+
+def _get_job_schedules() -> list[dict[str, Any]]:
+    """Fetch job schedules from API."""
+    try:
+        with _get_api_client() as client:
+            response = client.get("/jobs/schedules")
+            if response.status_code == 200:
+                return response.json().get("schedules", [])
+            return []
+    except Exception:
+        return []
 
 
 def show_jobs_page():
@@ -181,49 +202,12 @@ def _show_scheduled_jobs():
 
     st.markdown("---")
 
-    # Existing schedules
-    schedules = [
-        {
-            "id": "sched-001",
-            "name": "customer_etl_daily",
-            "pipeline": "customer_processing",
-            "schedule": "0 6 * * *",
-            "next_run": "Tomorrow 06:00",
-            "last_run": "Today 06:00",
-            "status": "success",
-            "enabled": True,
-        },
-        {
-            "id": "sched-002",
-            "name": "orders_hourly_sync",
-            "pipeline": "orders_pipeline",
-            "schedule": "0 * * * *",
-            "next_run": "In 45 min",
-            "last_run": "15 min ago",
-            "status": "success",
-            "enabled": True,
-        },
-        {
-            "id": "sched-003",
-            "name": "weekly_aggregation",
-            "pipeline": "aggregation_pipeline",
-            "schedule": "0 0 * * 0",
-            "next_run": "Sunday 00:00",
-            "last_run": "Last Sunday",
-            "status": "failed",
-            "enabled": True,
-        },
-        {
-            "id": "sched-004",
-            "name": "monthly_report",
-            "pipeline": "report_pipeline",
-            "schedule": "0 0 1 * *",
-            "next_run": "1st of month",
-            "last_run": "Dec 1",
-            "status": "success",
-            "enabled": False,
-        },
-    ]
+    # Fetch existing schedules from API
+    schedules = _get_job_schedules()
+
+    if not schedules:
+        st.info("No job schedules configured yet.")
+        return
 
     for schedule in schedules:
         with st.container():

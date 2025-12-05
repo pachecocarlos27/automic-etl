@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional
 import uuid
 import hashlib
@@ -21,6 +20,8 @@ from sqlalchemy import (
     JSON,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
+
+from automic_etl.core.utils import utc_now
 
 
 class Base(DeclarativeBase):
@@ -42,8 +43,8 @@ class UserModel(Base):
     status = Column(String(20), default="pending")
     roles = Column(JSON, default=list)
     is_superadmin = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     last_login = Column(DateTime, nullable=True)
     failed_login_attempts = Column(Integer, default=0)
     locked_until = Column(DateTime, nullable=True)
@@ -101,7 +102,7 @@ class UserModel(Base):
         """Set a new password."""
         self.salt = secrets.token_hex(32)
         self.password_hash = self.hash_password(password, self.salt)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = utc_now()
 
     @property
     def full_name(self) -> str:
@@ -113,7 +114,7 @@ class UserModel(Base):
     @property
     def is_locked(self) -> bool:
         """Check if account is locked."""
-        if self.locked_until and datetime.utcnow() < self.locked_until:
+        if self.locked_until and utc_now() < self.locked_until:
             return True
         return False
 
@@ -125,7 +126,7 @@ class SessionModel(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     token = Column(String(256), unique=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     expires_at = Column(DateTime, nullable=False)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
@@ -148,8 +149,8 @@ class PipelineModel(Base):
     source_config = Column(JSON, default=dict)
     destination_layer = Column(String(20), default="bronze")
     transformations = Column(JSON, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     last_run_at = Column(DateTime, nullable=True)
     run_count = Column(Integer, default=0)
 
@@ -164,7 +165,7 @@ class PipelineRunModel(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     pipeline_id = Column(String(36), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(20), default="pending")
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
     duration_seconds = Column(Float, nullable=True)
     records_processed = Column(Integer, default=0)
@@ -179,7 +180,7 @@ class AuditLogModel(Base):
     __tablename__ = "audit_logs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=utc_now, index=True)
     user_id = Column(String(36), nullable=True)
     username = Column(String(100), nullable=True)
     action = Column(String(50), nullable=False)
@@ -201,8 +202,8 @@ class DataTableModel(Base):
     schema_definition = Column(JSON, default=dict)
     row_count = Column(Integer, default=0)
     size_bytes = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     source_pipeline_id = Column(String(36), nullable=True)
     quality_score = Column(Float, nullable=True)
     last_profiled_at = Column(DateTime, nullable=True)
@@ -225,8 +226,8 @@ class JobScheduleModel(Base):
     timezone = Column(String(50), default="UTC")
     enabled = Column(Boolean, default=True)
     config = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     last_run_at = Column(DateTime, nullable=True)
     next_run_at = Column(DateTime, nullable=True)
     run_count = Column(Integer, default=0)
@@ -242,7 +243,7 @@ class JobRunModel(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     schedule_id = Column(String(36), ForeignKey("job_schedules.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(20), default="pending")  # pending, running, completed, failed, cancelled
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=utc_now)
     completed_at = Column(DateTime, nullable=True)
     duration_seconds = Column(Float, nullable=True)
     result = Column(JSON, default=dict)
@@ -266,8 +267,8 @@ class ValidationRuleModel(Base):
     rule_config = Column(JSON, default=dict)  # type-specific configuration
     severity = Column(String(20), default="warning")  # critical, high, medium, low
     enabled = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     created_by = Column(String(36), nullable=True)
     last_run_at = Column(DateTime, nullable=True)
     last_status = Column(String(20), nullable=True)  # passing, failing
@@ -281,7 +282,7 @@ class ValidationResultModel(Base):
     rule_id = Column(String(36), ForeignKey("validation_rules.id", ondelete="CASCADE"), nullable=False)
     run_id = Column(String(36), nullable=True)  # pipeline_run_id or job_run_id
     status = Column(String(20), nullable=False)  # passed, failed
-    executed_at = Column(DateTime, default=datetime.utcnow)
+    executed_at = Column(DateTime, default=utc_now)
     rows_checked = Column(Integer, default=0)
     rows_passed = Column(Integer, default=0)
     rows_failed = Column(Integer, default=0)
@@ -302,8 +303,8 @@ class ConnectorConfigModel(Base):
     status = Column(String(20), default="inactive")  # active, inactive, error
     last_tested_at = Column(DateTime, nullable=True)
     last_test_status = Column(String(20), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     created_by = Column(String(36), nullable=True)
     metadata_ = Column("metadata", JSON, default=dict)  # tables discovered, row counts, etc.
 
@@ -317,8 +318,8 @@ class NotificationChannelModel(Base):
     channel_type = Column(String(50), nullable=False)  # email, slack, teams, pagerduty, webhook
     config = Column(JSON, default=dict)  # channel-specific configuration
     enabled = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     created_by = Column(String(36), nullable=True)
     last_used_at = Column(DateTime, nullable=True)
     last_status = Column(String(20), nullable=True)  # success, failed
@@ -337,8 +338,8 @@ class AlertRuleModel(Base):
     channels = Column(JSON, default=list)  # list of channel_ids to notify
     enabled = Column(Boolean, default=True)
     cooldown_minutes = Column(Integer, default=15)  # minimum time between alerts
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
     created_by = Column(String(36), nullable=True)
     last_triggered_at = Column(DateTime, nullable=True)
     trigger_count = Column(Integer, default=0)
@@ -355,7 +356,7 @@ class AlertHistoryModel(Base):
     severity = Column(String(20), nullable=False)
     source = Column(String(100), nullable=True)  # what triggered the alert
     status = Column(String(20), default="triggered")  # triggered, acknowledged, resolved
-    triggered_at = Column(DateTime, default=datetime.utcnow)
+    triggered_at = Column(DateTime, default=utc_now)
     acknowledged_at = Column(DateTime, nullable=True)
     acknowledged_by = Column(String(36), nullable=True)
     resolved_at = Column(DateTime, nullable=True)

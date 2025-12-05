@@ -11,7 +11,7 @@ Provides:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import timedelta
 from typing import Any, Callable, Optional
 from functools import wraps
 
@@ -32,6 +32,7 @@ from automic_etl.auth.security import (
     TenantMismatchError,
 )
 from automic_etl.auth.models import PermissionType
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -351,7 +352,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
         if request.url.path.endswith("/health"):
             return await call_next(request)
 
-        start_time = datetime.utcnow()
+        start_time = utc_now()
 
         # Extract request info
         method = request.method
@@ -371,7 +372,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
 
             # Log successful request
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (utc_now() - start_time).total_seconds()
 
             logger.info(
                 "API request",
@@ -387,7 +388,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         except Exception as exc:
             # Log failed request
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (utc_now() - start_time).total_seconds()
 
             logger.error(
                 "API request failed",
@@ -416,6 +417,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, requests_per_minute: int = 100):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
+        from datetime import datetime
         self.request_counts: dict[str, list[datetime]] = {}
 
     async def dispatch(self, request: Request, call_next):
@@ -449,14 +451,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _check_rate_limit(self, client_id: str) -> bool:
         """Check if client is within rate limit."""
-        now = datetime.utcnow()
+        now = utc_now()
 
         # Initialize if needed
         if client_id not in self.request_counts:
             self.request_counts[client_id] = []
 
         # Remove old requests (older than 1 minute)
-        from datetime import timedelta
         cutoff = now - timedelta(minutes=1)
         self.request_counts[client_id] = [
             t for t in self.request_counts[client_id]

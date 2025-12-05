@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import Any
 import uuid
+
+from automic_etl.core.utils import utc_now
 
 
 class CompanyStatus(Enum):
@@ -271,7 +272,7 @@ class Company:
 
         if tier == CompanyTier.TRIAL:
             from datetime import timedelta
-            company.trial_ends_at = datetime.utcnow() + timedelta(days=14)
+            company.trial_ends_at = utc_now() + timedelta(days=14)
             company.status = CompanyStatus.TRIAL
         else:
             company.status = CompanyStatus.ACTIVE
@@ -336,7 +337,7 @@ class Company:
             return False
         if not self.trial_ends_at:
             return False
-        return datetime.utcnow() > self.trial_ends_at
+        return utc_now() > self.trial_ends_at
 
     def to_dict(self, include_sensitive: bool = False) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -383,7 +384,7 @@ class UserInvitation:
     status: InvitationStatus = InvitationStatus.PENDING
     token: str = ""
     created_at: datetime = field(default_factory=datetime.utcnow)
-    expires_at: datetime = field(default_factory=lambda: datetime.utcnow())
+    expires_at: datetime = field(default_factory=lambda: utc_now())
     accepted_at: datetime | None = None
     accepted_user_id: str | None = None
     message: str | None = None
@@ -409,14 +410,14 @@ class UserInvitation:
             role_ids=role_ids or ["viewer"],
             invited_by_user_id=invited_by_user_id,
             token=secrets.token_urlsafe(32),
-            expires_at=datetime.utcnow() + timedelta(days=expires_in_days),
+            expires_at=utc_now() + timedelta(days=expires_in_days),
             message=message,
         )
 
     @property
     def is_expired(self) -> bool:
         """Check if invitation has expired."""
-        return datetime.utcnow() > self.expires_at
+        return utc_now() > self.expires_at
 
     @property
     def is_valid(self) -> bool:
@@ -426,7 +427,7 @@ class UserInvitation:
     def accept(self, user_id: str) -> None:
         """Accept the invitation."""
         self.status = InvitationStatus.ACCEPTED
-        self.accepted_at = datetime.utcnow()
+        self.accepted_at = utc_now()
         self.accepted_user_id = user_id
 
     def revoke(self) -> None:

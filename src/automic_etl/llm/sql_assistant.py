@@ -14,6 +14,7 @@ import structlog
 
 from automic_etl.core.config import Settings
 from automic_etl.llm.client import LLMClient
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -49,7 +50,7 @@ class ConversationMessage:
     """A message in the conversation history."""
     role: str  # user, assistant, system
     content: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=utc_now)
     query_result: dict | None = None
     sql_generated: str | None = None
 
@@ -64,8 +65,8 @@ class ConversationContext:
     referenced_tables: set[str] = field(default_factory=set)
     last_sql: str | None = None
     last_result_summary: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
     def add_message(self, role: str, content: str, **kwargs) -> None:
         """Add a message to the conversation."""
@@ -74,7 +75,7 @@ class ConversationContext:
             content=content,
             **kwargs
         ))
-        self.updated_at = datetime.utcnow()
+        self.updated_at = utc_now()
 
     def get_recent_context(self, max_messages: int = 10) -> list[dict]:
         """Get recent messages for context."""

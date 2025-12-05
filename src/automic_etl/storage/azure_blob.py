@@ -17,6 +17,7 @@ from azure.storage.blob import (
 
 from automic_etl.core.exceptions import StorageError
 from automic_etl.storage.base import StorageBackend, StorageObject
+from automic_etl.core.utils import utc_now
 
 
 class AzureBlobStorage(StorageBackend):
@@ -268,7 +269,7 @@ class AzureBlobStorage(StorageBackend):
                 container_name=self.container_name,
                 blob_name=full_path,
                 permission=permission,
-                expiry=datetime.utcnow() + timedelta(seconds=expiration),
+                expiry=utc_now() + timedelta(seconds=expiration),
             )
 
             blob_url = f"https://{self._service_client.account_name}.blob.core.windows.net/{self.container_name}/{full_path}"

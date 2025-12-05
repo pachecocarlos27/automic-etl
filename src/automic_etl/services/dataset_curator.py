@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import polars as pl
 import structlog
+
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -81,7 +82,7 @@ class DatasetCurator:
         self.logger = logger.bind(component="dataset_curator")
 
         if self.config.deid_version is None:
-            self.config.deid_version = datetime.utcnow().strftime("%Y-%m-%d_v1")
+            self.config.deid_version = utc_now().strftime("%Y-%m-%d_v1")
 
     def curate(
         self,
@@ -310,7 +311,7 @@ class DatasetCurator:
             name=name,
             description=description,
             version=self.config.deid_version or "1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
             row_count=len(data),
             splits=split_counts,
             schema=schema,
@@ -334,7 +335,7 @@ class DatasetCurator:
 
     def _save_qa_report(self, qa_report: dict[str, Any], output_dir: Path) -> None:
         """Save QA report to file."""
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
         qa_path = output_dir / self.config.qa_subdir / f"qa_report_{timestamp}.json"
         with open(qa_path, "w") as f:
             json.dump(qa_report, f, indent=2, default=str)
@@ -379,7 +380,7 @@ class DatasetCurator:
         output_dir = output_dir or Path(self.config.output_dir)
 
         manifest = {
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": utc_now().isoformat(),
             "root_dir": str(output_dir),
             "files": {},
         }

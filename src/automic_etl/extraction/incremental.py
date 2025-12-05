@@ -13,6 +13,7 @@ from automic_etl.connectors.base import BaseConnector
 from automic_etl.core.config import Settings
 from automic_etl.extraction.watermark import WatermarkManager
 from automic_etl.utils.helpers import parse_duration
+from automic_etl.core.utils import utc_now
 
 logger = structlog.get_logger()
 
@@ -145,7 +146,7 @@ class IncrementalExtractor:
             previous_watermark=previous_watermark,
             new_watermark=new_watermark,
             is_initial_load=is_initial,
-            extraction_time=datetime.utcnow(),
+            extraction_time=utc_now(),
         )
 
     def _remove_watermark_filter(self, query_template: str) -> str:

@@ -9,6 +9,8 @@ from datetime import datetime
 import polars as pl
 import structlog
 
+from automic_etl.core.utils import utc_now
+
 logger = structlog.get_logger()
 
 
@@ -214,7 +216,7 @@ class DataQualityChecker:
 
         report = QualityReport(
             dataset_name=dataset_name,
-            profile_time=datetime.utcnow(),
+            profile_time=utc_now(),
             row_count=len(df),
             column_count=len(df.columns),
             memory_bytes=df.estimated_size(),

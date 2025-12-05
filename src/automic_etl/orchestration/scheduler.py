@@ -13,6 +13,8 @@ import uuid
 from croniter import croniter
 import structlog
 
+from automic_etl.core.utils import utc_now
+
 logger = structlog.get_logger()
 
 
@@ -70,7 +72,7 @@ class Schedule:
 
     def get_next_run(self, after: datetime | None = None) -> datetime | None:
         """Calculate next run time."""
-        after = after or datetime.utcnow()
+        after = after or utc_now()
 
         if self.schedule_type == "cron" and self.expression:
             cron = croniter(self.expression, after)
@@ -249,7 +251,7 @@ class Scheduler:
             execution_id=execution_id,
             job_id=job.job_id,
             job_name=job.name,
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
             status=JobStatus.RUNNING,
         )
 
@@ -296,7 +298,7 @@ class Scheduler:
 
             # Handle retry
             if job.error_count <= job.max_retries:
-                job.next_run = datetime.utcnow() + timedelta(seconds=job.retry_delay)
+                job.next_run = utc_now() + timedelta(seconds=job.retry_delay)
                 self.logger.info(
                     "Job scheduled for retry",
                     job_id=job.job_id,
@@ -305,7 +307,7 @@ class Scheduler:
                 )
 
         finally:
-            execution.ended_at = datetime.utcnow()
+            execution.ended_at = utc_now()
             execution.duration_ms = int(
                 (execution.ended_at - execution.started_at).total_seconds() * 1000
             )
@@ -325,7 +327,7 @@ class Scheduler:
     def _scheduler_loop(self) -> None:
         """Main scheduler loop."""
         while self._running:
-            now = datetime.utcnow()
+            now = utc_now()
 
             jobs_to_run = []
 

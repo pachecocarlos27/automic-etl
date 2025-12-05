@@ -12,7 +12,14 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd multi-tenant support with company management and superadmin controls\n\nMulti-Tenant Architecture:\n- Company model with status, tiers, limits, settings, and usage tracking\n- CompanyMembership for user-company relationships with roles\n- UserInvitation system with token-based acceptance\n- TenantContext for request-scoped company isolation\n- Subscription tiers: Free, Starter, Professional, Enterprise\n\nCompany Management (CompanyManager):\n- Full CRUD operations for companies\n- Member management (add, remove, update roles)\n- Invitation system with email and expiration\n- Usage tracking and limit enforcement\n- Ownership transfer capability\n\nSuperadmin Controls (SuperadminController):\n- GlobalSettings for platform-wide configuration\n- Maintenance mode with allowed IPs\n- Company oversight (approve, suspend, tier changes)\n- User management across all companies\n- Create/revoke superadmin privileges\n- User impersonation for support\n- System health monitoring\n- Comprehensive audit logging\n\nREST API Endpoints:\n- /api/v1/companies - Company CRUD, members, invitations\n- /api/v1/admin - Superadmin controls, settings, health\n\nUI Pages:\n- Company Admin page for company settings and member management\n- Superadmin Dashboard with platform overview, company/user management\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
       "Bash(ls:*)",
-      "Bash(dir /s c:Userscarl0OneDriveDocumentsdatantLLCAutomicETLToolsrc)"
+      "Bash(dir /s c:Userscarl0OneDriveDocumentsdatantLLCAutomicETLToolsrc)",
+      "Bash(wc -l \"c:\\Users\\carl0\\OneDrive\\Documents\\datantLLC\\AutomicETLTool\\src\\automic_etl\"/**/*.py)",
+      "Bash(find:*)",
+      "Bash(python -c:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(dir:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []
