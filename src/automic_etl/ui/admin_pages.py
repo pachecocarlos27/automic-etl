@@ -101,8 +101,9 @@ def show_admin_overview():
                 with st.container():
                     col_a, col_b = st.columns([3, 1])
                     with col_a:
-                        st.markdown(f"**{log.action.replace('_', ' ').title()}**")
-                        if log.username:
+                        action_str = str(log.action) if log.action is not None else ""
+                        st.markdown(f"**{action_str.replace('_', ' ').title()}**")
+                        if log.username is not None:
                             st.caption(f"By: {log.username}")
                     with col_b:
                         st.caption(log.timestamp.strftime("%H:%M"))
@@ -152,52 +153,60 @@ def show_user_management():
             ]
 
         if role_filter != "All":
-            users = [u for u in users if role_filter in (u.roles or [])]
+            users = [u for u in users if role_filter in (list(u.roles) if u.roles is not None else [])]
 
     st.markdown(f"**{len(users)} users found**")
 
     for user in users:
+        user_roles = list(user.roles) if user.roles is not None else []
+        user_status = str(user.status) if user.status is not None else "unknown"
+        user_is_superadmin = bool(user.is_superadmin)
+        
         with st.expander(f"{user.full_name} (@{user.username})", expanded=False):
             col1, col2, col3 = st.columns([2, 2, 1])
 
             with col1:
                 st.markdown(f"**Email:** {user.email}")
-                st.markdown(f"**Status:** {user.status.title()}")
-                st.markdown(f"**Roles:** {', '.join(user.roles or []) or 'None'}")
+                st.markdown(f"**Status:** {user_status.title()}")
+                st.markdown(f"**Roles:** {', '.join(user_roles) or 'None'}")
 
             with col2:
                 st.markdown(f"**Created:** {user.created_at.strftime('%Y-%m-%d')}")
-                if user.last_login:
+                if user.last_login is not None:
                     st.markdown(f"**Last Login:** {user.last_login.strftime('%Y-%m-%d %H:%M')}")
-                if user.is_superadmin:
+                if user_is_superadmin:
                     st.info("Super Administrator")
 
             with col3:
-                if not user.is_superadmin or st.session_state.user.is_superadmin:
-                    if user.status == "pending":
+                current_user_is_superadmin = bool(st.session_state.user.is_superadmin) if hasattr(st.session_state.user, 'is_superadmin') else False
+                if not user_is_superadmin or current_user_is_superadmin:
+                    if user_status == "pending":
                         if st.button("Activate", key=f"activate_{user.id}", type="primary"):
                             with get_session() as sess:
                                 u = sess.query(UserModel).filter(UserModel.id == user.id).first()
                                 if u:
-                                    u.status = "active"
+                                    setattr(u, 'status', 'active')
+                                    sess.commit()
                             st.success(f"User {user.username} activated!")
                             st.rerun()
 
-                    elif user.status == "active" and not user.is_superadmin:
+                    elif user_status == "active" and not user_is_superadmin:
                         if st.button("Suspend", key=f"suspend_{user.id}"):
                             with get_session() as sess:
                                 u = sess.query(UserModel).filter(UserModel.id == user.id).first()
                                 if u:
-                                    u.status = "suspended"
+                                    setattr(u, 'status', 'suspended')
+                                    sess.commit()
                             st.warning(f"User {user.username} suspended!")
                             st.rerun()
 
-                    elif user.status == "suspended":
+                    elif user_status == "suspended":
                         if st.button("Reactivate", key=f"reactivate_{user.id}"):
                             with get_session() as sess:
                                 u = sess.query(UserModel).filter(UserModel.id == user.id).first()
                                 if u:
-                                    u.status = "active"
+                                    setattr(u, 'status', 'active')
+                                    sess.commit()
                             st.success(f"User {user.username} reactivated!")
                             st.rerun()
 
@@ -273,7 +282,7 @@ def show_pending_approvals():
             with col1:
                 st.markdown(f"**{user.full_name}**")
                 st.caption(f"@{user.username}")
-                st.caption(user.email)
+                st.caption(str(user.email))
 
             with col2:
                 st.markdown(f"Registered: {user.created_at.strftime('%Y-%m-%d %H:%M')}")
@@ -283,7 +292,8 @@ def show_pending_approvals():
                     with get_session() as sess:
                         u = sess.query(UserModel).filter(UserModel.id == user.id).first()
                         if u:
-                            u.status = "active"
+                            setattr(u, 'status', 'active')
+                            sess.commit()
                     st.success(f"Approved {user.username}")
                     st.rerun()
 
@@ -292,6 +302,7 @@ def show_pending_approvals():
                         u = sess.query(UserModel).filter(UserModel.id == user.id).first()
                         if u:
                             sess.delete(u)
+                            sess.commit()
                     st.warning(f"Rejected {user.username}")
                     st.rerun()
 
@@ -326,11 +337,17 @@ def show_audit_logs():
         logs = query.limit(100).all()
 
         if user_search:
-            logs = [l for l in logs if l.username and user_search.lower() in l.username.lower()]
+            logs = [l for l in logs if l.username is not None and user_search.lower() in str(l.username).lower()]
 
     st.markdown(f"**{len(logs)} log entries**")
 
     for log in logs:
+        log_action = str(log.action) if log.action else ""
+        log_success = bool(log.success) if log.success is not None else True
+        log_username = str(log.username) if log.username is not None else None
+        log_resource_type = str(log.resource_type) if log.resource_type is not None else None
+        log_ip_address = str(log.ip_address) if log.ip_address is not None else None
+        
         with st.container():
             col1, col2, col3, col4 = st.columns([1, 2, 3, 1])
 
@@ -338,22 +355,22 @@ def show_audit_logs():
                 st.caption(log.timestamp.strftime("%m/%d %H:%M"))
 
             with col2:
-                action_display = log.action.replace("_", " ").title()
-                if log.success:
+                action_display = log_action.replace("_", " ").title()
+                if log_success:
                     st.markdown(f"**{action_display}**")
                 else:
                     st.markdown(f"**:red[{action_display}]**")
 
             with col3:
                 details = []
-                if log.username:
-                    details.append(f"User: {log.username}")
-                if log.resource_type:
-                    details.append(f"Resource: {log.resource_type}")
+                if log_username:
+                    details.append(f"User: {log_username}")
+                if log_resource_type:
+                    details.append(f"Resource: {log_resource_type}")
                 st.caption(" | ".join(details) if details else "-")
 
             with col4:
-                if log.ip_address:
-                    st.caption(log.ip_address)
+                if log_ip_address:
+                    st.caption(log_ip_address)
 
         st.markdown("<hr style='margin: 0.2rem 0'>", unsafe_allow_html=True)

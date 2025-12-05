@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import os
 import httpx
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import Any
 
-# API base URL
-API_BASE_URL = "http://localhost:8000/api/v1"
+# API base URL - use environment variable or default to localhost for development
+_domain = os.environ.get('REPLIT_DEV_DOMAIN')
+if _domain:
+    API_BASE_URL = os.environ.get("API_BASE_URL", f"https://{_domain}/api/v1")
+else:
+    API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000/api/v1")
 
 
 def _get_api_client() -> httpx.Client:
@@ -40,7 +45,7 @@ def _get_platform_stats() -> dict[str, Any]:
 def _get_companies(status: str | None = None, tier: str | None = None, search: str | None = None) -> list[dict]:
     """Fetch companies from API."""
     try:
-        params = {"page_size": 50}
+        params: dict[str, Any] = {"page_size": 50}
         if status and status != "All":
             params["status"] = status.lower()
         if tier and tier != "All":
@@ -61,7 +66,7 @@ def _get_companies(status: str | None = None, tier: str | None = None, search: s
 def _get_users(user_type: str | None = None, status: str | None = None, search: str | None = None) -> list[dict]:
     """Fetch users from API."""
     try:
-        params = {"page_size": 50}
+        params: dict[str, Any] = {"page_size": 50}
         if user_type == "Superadmins Only":
             params["superadmin_only"] = True
         if status and status != "All":
@@ -106,7 +111,7 @@ def _get_system_health() -> dict[str, Any]:
 def _get_audit_logs(action_type: str | None = None, days: int = 7) -> list[dict]:
     """Fetch audit logs from API."""
     try:
-        params = {"page_size": 100, "days": days}
+        params: dict[str, Any] = {"page_size": 100, "days": days}
         if action_type and action_type != "All":
             params["action_type"] = action_type
 
@@ -418,10 +423,12 @@ def render_companies_section():
                     status = company.get("status", "").lower()
                     if status == "active":
                         if st.button("⏸️", key=f"suspend_{company_id}", help="Suspend"):
-                            _suspend_company(company_id, company.get("name", ""))
+                            if company_id:
+                                _suspend_company(str(company_id), company.get("name", ""))
                     elif status == "suspended":
                         if st.button("▶️", key=f"activate_{company_id}", help="Activate"):
-                            _activate_company(company_id, company.get("name", ""))
+                            if company_id:
+                                _activate_company(str(company_id), company.get("name", ""))
 
             st.divider()
 
@@ -650,20 +657,23 @@ def render_users_section():
                 btn_col1, btn_col2, btn_col3 = st.columns(3)
                 with btn_col1:
                     if st.button("🔑", key=f"reset_pw_{user_id}", help="Reset Password"):
-                        _reset_user_password(user_id, user.get("email", ""))
+                        if user_id:
+                            _reset_user_password(str(user_id), user.get("email", ""))
                 with btn_col2:
                     if st.button("👤", key=f"impersonate_{user_id}", help="Impersonate"):
-                        if not is_superadmin:
-                            _impersonate_user(user_id, user.get("username", ""))
-                        else:
+                        if not is_superadmin and user_id:
+                            _impersonate_user(str(user_id), user.get("username", ""))
+                        elif is_superadmin:
                             st.error("Cannot impersonate superadmins")
                 with btn_col3:
                     if status == "active" and not is_superadmin:
                         if st.button("⏸️", key=f"suspend_user_{user_id}", help="Suspend"):
-                            _suspend_user(user_id, user.get("username", ""))
+                            if user_id:
+                                _suspend_user(str(user_id), user.get("username", ""))
                     elif status == "suspended":
                         if st.button("▶️", key=f"activate_user_{user_id}", help="Activate"):
-                            _activate_user(user_id, user.get("username", ""))
+                            if user_id:
+                                _activate_user(str(user_id), user.get("username", ""))
 
             st.divider()
 
