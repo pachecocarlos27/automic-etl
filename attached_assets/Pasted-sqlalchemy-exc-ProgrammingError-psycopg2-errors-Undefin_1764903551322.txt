@@ -1,0 +1,51 @@
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column data_tables.last_profiled_at does not exist LINE 1: ...ables.quality_score AS data_tables_quality_score, data_table... ^ [SQL: SELECT data_tables.id AS data_tables_id, data_tables.name AS data_tables_name, data_tables.layer AS data_tables_layer, data_tables.schema_definition AS data_tables_schema_definition, data_tables.row_count AS data_tables_row_count, data_tables.size_bytes AS data_tables_size_bytes, data_tables.created_at AS data_tables_created_at, data_tables.updated_at AS data_tables_updated_at, data_tables.source_pipeline_id AS data_tables_source_pipeline_id, data_tables.quality_score AS data_tables_quality_score, data_tables.last_profiled_at AS data_tables_last_profiled_at, data_tables.profile_data AS data_tables_profile_data, data_tables.tags AS data_tables_tags, data_tables.description AS data_tables_description FROM data_tables ORDER BY data_tables.updated_at DESC] (Background on this error at: https://sqlalche.me/e/20/f405)
+Traceback:
+File "/home/runner/workspace/src/automic_etl/ui/app.py", line 491, in <module>
+    run_app()
+File "/home/runner/workspace/src/automic_etl/ui/app.py", line 233, in run_app
+    _route_to_page(current_page, show_admin_dashboard, show_profile_page)
+File "/home/runner/workspace/src/automic_etl/ui/app.py", line 301, in _route_to_page
+    page_func()
+File "/home/runner/workspace/src/automic_etl/ui/pages/ingestion.py", line 76, in show_ingestion_page
+    show_data_tables_section()
+File "/home/runner/workspace/src/automic_etl/ui/pages/ingestion.py", line 277, in show_data_tables_section
+    tables = data_service.list_tables(layer=layer)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/src/automic_etl/db/data_service.py", line 73, in list_tables
+    tables = query.order_by(DataTableModel.updated_at.desc()).all()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2704, in all
+    return self._iter().all()  # type: ignore
+           ^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2857, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
