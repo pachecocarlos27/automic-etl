@@ -14,7 +14,7 @@ import streamlit as st
 def page_header(
     title: str,
     description: str | None = None,
-    actions: list[tuple[str, str, Callable]] | None = None,
+    actions: list[tuple[str, Literal["primary", "secondary", "tertiary"], Callable]] | None = None,
 ) -> None:
     """
     Display a clean page header.
